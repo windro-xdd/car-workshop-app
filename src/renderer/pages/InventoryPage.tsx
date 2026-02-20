@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { ItemForm } from '@/components/ItemForm';
-import { ItemTable } from '@/components/ItemTable';
-import { useItemStore } from '@/store/itemStore';
-import { Item, CreateItemInput } from '@/types';
+import { ItemForm } from '../components/ItemForm';
+import { ItemTable } from '../components/ItemTable';
+import { useItemStore } from '../store/itemStore';
+import { Item, CreateItemInput } from '../../types';
 
 export const InventoryPage: React.FC = () => {
   const { items, loading, error, setItems, setLoading, setError } = useItemStore();
