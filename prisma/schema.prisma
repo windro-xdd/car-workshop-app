@@ -1,0 +1,86 @@
+// Kripa Car Care Workshop - Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Items Inventory
+model Item {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  category  String
+  unitPrice Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  lineItems LineItem[]
+
+  @@map("items")
+}
+
+// Invoices
+model Invoice {
+  id                String   @id @default(cuid())
+  invoiceNumber     String   @unique
+  invoiceDate       DateTime @default(now())
+  customerName      String
+  customerPhone     String?
+  customerEmail     String?
+  grossAmount       Float    @default(0)
+  gstAmount         Float    @default(0)
+  netTotal          Float    @default(0)
+  gstPercentage     Float    @default(18.0)
+  status            String   @default("Draft") // Draft, Final, Cancelled
+  isAmendment       Boolean  @default(false)
+  originalInvoiceId String?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  lineItems LineItem[]
+
+  @@map("invoices")
+}
+
+// Line Items (Invoice Details)
+model LineItem {
+  id        String @id @default(cuid())
+  invoiceId String
+  itemId    String
+  quantity  Float
+  unitPrice Float
+  lineTotal Float @default(0)
+
+  // Relations
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  item    Item   @relation(fields: [itemId], references: [id])
+
+  @@map("line_items")
+}
+
+// GST Configuration
+model GstConfig {
+  id       String  @id @default(cuid())
+  rate     Float   @default(18.0)
+  isActive Boolean @default(true)
+
+  @@map("gst_config")
+}
+
+// Backup Tracking
+model Backup {
+  id        String   @id @default(cuid())
+  filePath  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  @@map("backups")
+}
