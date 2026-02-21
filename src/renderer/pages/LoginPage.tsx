@@ -3,7 +3,6 @@ import { useUserStore } from '../store/userStore';
 import { FormInput } from '../components/FormInput';
 import { Button } from '../components/Button';
 import { Alert } from '../components/Alert';
-import kripaLogo from '../../assets/kripa-logo.png';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -78,7 +77,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       <div className="w-full max-w-md relative z-10">
         <div className="bg-white rounded-2xl shadow-lg border border-zinc-200/60 p-8 md:p-10 transition-all duration-300">
           <div className="text-center mb-8">
-            <img src={kripaLogo} alt="Kripa Car Care" className="w-12 h-12 mx-auto mb-4" />
+            <img src="./kripa-logo.png" alt="Kripa Car Care" className="w-12 h-12 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Kripa Car Care</h1>
             <p className="text-sm text-zinc-500 mt-1.5">Workshop Management System</p>
           </div>
