@@ -10,6 +10,11 @@ rules.push({
   ],
 });
 
+rules.push({
+  test: /\.(png|jpg|jpeg|gif|svg)$/,
+  type: 'asset/resource',
+});
+
 module.exports = {
   entry: './src/renderer.tsx',
   module: {

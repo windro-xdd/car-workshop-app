@@ -7,6 +7,7 @@ import { LoginPage } from './renderer/pages/LoginPage';
 import { useUserStore } from './renderer/store/userStore';
 import { ToastProvider } from './renderer/components/ToastProvider';
 import { ModalProvider } from './renderer/components/ModalProvider';
+import kripraLogo from '../public/kripa-logo.png';
 import './index.css';
 
 type Page = 'inventory' | 'invoice' | 'settings' | 'reporting';
@@ -36,7 +37,7 @@ const App: React.FC = () => {
           }`}>
             <div className="h-16 flex items-center px-6 border-b border-zinc-100 shrink-0">
               <div className="flex items-center gap-2.5">
-                <img src="./kripa-logo.png" alt="Kripa Car Care" className="w-8 h-8" />
+                <img src={kripraLogo} alt="Kripa Car Care" className="w-8 h-8" />
                 <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Kripa Car Care</h1>
               </div>
               <button 
