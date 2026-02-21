@@ -21,8 +21,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow-md">
         <div className="max-w-6xl mx-auto px-8 py-4">
-          <div className="flex items-center justify-between">
-        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-8">
             <div className="flex items-center space-x-2">
               <div className="text-2xl font-bold text-blue-600">🚗</div>
               <h1 className="text-2xl font-bold text-gray-900">Kripa Car Care</h1>
@@ -85,7 +84,6 @@ const App: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
           </div>
         </div>
       </nav>
