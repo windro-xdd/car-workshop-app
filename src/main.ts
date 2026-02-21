@@ -406,23 +406,31 @@ ipcMain.handle('print-invoice-pdf', async (_event, invoiceId: string) => {
     const items = await prisma.item.findMany();
     const pdfBuffer = await generateInvoicePDF(invoice, items);
     const fileName = `${invoice.invoiceNumber.replace('/', '-')}.pdf`;
-    const filePath = path.join(app.getPath('documents'), fileName);
 
-    await savePDFToFile(pdfBuffer, filePath);
+    const { filePath } = await dialog.showSaveDialog(mainWindow!, {
+      defaultPath: path.join(app.getPath('documents'), fileName),
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+    });
 
-    const { execFile } = require('child_process');
-    const printCommand = process.platform === 'win32' ? 'powershell.exe' : 'lp';
-    
-    if (process.platform === 'win32') {
-      execFile(printCommand, [
-        '-Command',
-        `Start-Process -FilePath "${filePath}" -Verb Print -WindowStyle Hidden`,
-      ]);
+    if (filePath) {
+      await savePDFToFile(pdfBuffer, filePath);
+
+      const { execFile } = require('child_process');
+      const printCommand = process.platform === 'win32' ? 'powershell.exe' : 'lp';
+      
+      if (process.platform === 'win32') {
+        execFile(printCommand, [
+          '-Command',
+          `Start-Process -FilePath "${filePath}" -Verb Print -WindowStyle Hidden`,
+        ]);
+      } else {
+        execFile(printCommand, [filePath]);
+      }
+
+      return { success: true, data: { filePath, fileName: path.basename(filePath) } };
     } else {
-      execFile(printCommand, [filePath]);
+      return { success: false, error: 'Save cancelled' };
     }
-
-    return { success: true, data: { filePath, fileName: path.basename(filePath) } };
   } catch (error) {
     console.error('Error printing PDF:', error);
     return {
