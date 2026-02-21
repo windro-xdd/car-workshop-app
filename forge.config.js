@@ -1,6 +1,6 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
-const { ForgeExternalsPlugin } = require('@timfish/forge-externals-plugin');
+const ForgeExternalsPlugin = require('@timfish/forge-externals-plugin');
 
 module.exports = {
   packagerConfig: {
