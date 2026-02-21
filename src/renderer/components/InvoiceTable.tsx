@@ -1,5 +1,7 @@
 import React from 'react';
 import { Invoice } from '../../types';
+import { useModal } from './ModalProvider';
+import { useToast } from './ToastProvider';
 import { formatDate, formatCurrency } from '../utils/invoiceUtils';
 
 interface InvoiceTableProps {
@@ -17,6 +19,24 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   onDownloadPDF,
   onCreateAmendment,
 }) => {
+  const { openModal } = useModal();
+  const { showToast } = useToast();
+
+  const handleDeleteClick = async (invoice: Invoice) => {
+    const confirmed = await openModal(
+      'Delete Invoice',
+      `Are you sure you want to delete invoice #${invoice.invoiceNumber}? This action cannot be undone.`,
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        isDangerous: true,
+      }
+    );
+    if (confirmed) {
+      onDeleteInvoice(invoice.id);
+      showToast(`Invoice #${invoice.invoiceNumber} deleted`, 'success', 4000);
+    }
+  };
   if (invoices.length === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow text-center text-gray-500">
@@ -95,8 +115,9 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                   </button>
                 )}
                 <button
-                  onClick={() => onDeleteInvoice(invoice.id)}
+                  onClick={() => handleDeleteClick(invoice)}
                   className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition text-sm"
+                  aria-label={`Delete invoice #${invoice.invoiceNumber}`}
                 >
                   Delete
                 </button>
