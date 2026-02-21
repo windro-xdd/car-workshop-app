@@ -77,7 +77,7 @@ export const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
               <span>Subtotal (Gross):</span>
               <span className="font-semibold">{formatCurrency(grossTotal)}</span>
             </div>
-            <div className="flex justify-between text-orange-600">
+            <div className="flex justify-between text-orange-700">
               <span>GST ({gstPercentage}%):</span>
               <span className="font-semibold">{formatCurrency(gstAmount)}</span>
             </div>

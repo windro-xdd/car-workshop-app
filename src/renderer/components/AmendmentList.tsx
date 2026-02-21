@@ -45,7 +45,7 @@ export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items,
               <td className="py-3 px-4 font-mono text-sm">{amendment.invoiceNumber}</td>
               <td className="text-center py-3 px-4 text-sm">{formatDate(amendment.invoiceDate)}</td>
               <td className="text-right py-3 px-4">{formatCurrency(amendment.grossAmount)}</td>
-              <td className="text-right py-3 px-4 text-orange-600">{formatCurrency(amendment.gstAmount)}</td>
+              <td className="text-right py-3 px-4 text-orange-700">{formatCurrency(amendment.gstAmount)}</td>
               <td className="text-right py-3 px-4 font-semibold">{formatCurrency(amendment.netTotal)}</td>
               <td className="text-center py-3 px-4">
                 <span
@@ -61,12 +61,13 @@ export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items,
                 </span>
               </td>
               <td className="text-center py-3 px-4">
-                <button
-                  onClick={() => onViewAmendment(amendment)}
-                  className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-sm"
-                >
-                  View
-                </button>
+               <button
+                   onClick={() => onViewAmendment(amendment)}
+                   className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-sm"
+                   aria-label={`View amendment for invoice #${amendment.invoiceNumber}`}
+                 >
+                   View
+                 </button>
               </td>
             </tr>
           ))}

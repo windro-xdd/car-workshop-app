@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Invoice } from '../../types';
+import { useToast } from '../components/ToastProvider';
 import { formatDate, formatCurrency } from '../utils/invoiceUtils';
 import { exportToCSV, exportToPDF } from '../utils/reportExport';
 
@@ -22,6 +23,7 @@ interface TrendData {
 }
 
 export const ReportingPage: React.FC = () => {
+  const { showToast } = useToast();
   const [startDate, setStartDate] = useState<string>(
     new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0]
   );
@@ -34,6 +36,7 @@ export const ReportingPage: React.FC = () => {
   const [dailyReport, setDailyReport] = useState<DailyRevenueRow[]>([]);
   const [customerReport, setCustomerReport] = useState<CustomerSummaryRow[]>([]);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
+  const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
   useEffect(() => {
     loadInvoices();
@@ -66,6 +69,15 @@ export const ReportingPage: React.FC = () => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
+
+    // Validate date range
+    if (start > end) {
+      showToast('Start date cannot be after end date', 'error', 5000);
+      setDailyReport([]);
+      setCustomerReport([]);
+      setTrendData([]);
+      return;
+    }
 
     const filtered = invoices.filter((inv) => {
       const invDate = new Date(inv.invoiceDate);
@@ -196,8 +208,19 @@ export const ReportingPage: React.FC = () => {
             const y = chartHeight + padding - barHeight;
 
             return (
-              <g key={`bar-${index}`}>
-                <rect x={x} y={y} width={barWidth} height={barHeight} fill="#3b82f6" />
+              <g
+                key={`bar-${index}`}
+                onMouseEnter={() => setHoveredBar(index)}
+                onMouseLeave={() => setHoveredBar(null)}
+              >
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={barHeight}
+                  fill={hoveredBar === index ? '#1e40af' : '#3b82f6'}
+                  style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
+                />
                 <text
                   x={x + barWidth / 2}
                   y={chartHeight + padding + 20}
@@ -208,6 +231,28 @@ export const ReportingPage: React.FC = () => {
                 >
                   {item.date}
                 </text>
+                {hoveredBar === index && (
+                  <g>
+                    <rect
+                      x={x + barWidth / 2 - 35}
+                      y={y - 30}
+                      width="70"
+                      height="25"
+                      fill="#1f2937"
+                      rx="4"
+                    />
+                    <text
+                      x={x + barWidth / 2}
+                      y={y - 10}
+                      fontSize="12"
+                      fill="white"
+                      textAnchor="middle"
+                      fontWeight="bold"
+                    >
+                      {formatCurrency(item.revenue)}
+                    </text>
+                  </g>
+                )}
               </g>
             );
           })}
@@ -222,24 +267,28 @@ export const ReportingPage: React.FC = () => {
         <h1 className="text-3xl font-bold mb-2 text-gray-900">Reports & Analytics</h1>
         <p className="text-gray-600 mb-8">Generate financial reports and analyze business trends</p>
 
-        <div className="bg-white p-6 rounded-lg shadow mb-8">
+         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <h2 className="text-lg font-semibold mb-4">Date Range</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
               <input
+                id="start-date"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
+                aria-label="Select start date for report"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
               <input
+                id="end-date"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
+                aria-label="Select end date for report"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -256,6 +305,7 @@ export const ReportingPage: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
+                aria-label={`View ${tab.label} report`}
                 className={`flex-1 px-6 py-4 font-medium transition ${
                   activeTab === tab.id
                     ? 'border-b-2 border-blue-600 text-blue-600'
@@ -284,7 +334,9 @@ export const ReportingPage: React.FC = () => {
                             cumulativeTotal: formatCurrency(row.cumulativeTotal),
                           }));
                           exportToCSV('daily-revenue-report', data, headers);
+                          showToast('Daily revenue report exported successfully', 'success', 4000);
                         }}
+                        aria-label="Export daily revenue report as CSV"
                         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
                       >
                         Export CSV
@@ -334,7 +386,9 @@ export const ReportingPage: React.FC = () => {
                             avgInvoiceValue: formatCurrency(row.avgInvoiceValue),
                           }));
                           exportToCSV('customer-summary-report', data, headers);
+                          showToast('Customer summary report exported successfully', 'success', 4000);
                         }}
+                        aria-label="Export customer summary report as CSV"
                         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
                       >
                         Export CSV
@@ -382,7 +436,9 @@ export const ReportingPage: React.FC = () => {
                             revenue: formatCurrency(row.revenue),
                           }));
                           exportToCSV('revenue-trend-report', data, headers);
+                          showToast('Revenue trend report exported successfully', 'success', 4000);
                         }}
+                        aria-label="Export revenue trend report as CSV"
                         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
                       >
                         Export CSV

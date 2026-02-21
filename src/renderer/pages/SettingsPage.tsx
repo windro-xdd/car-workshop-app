@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { BackupManager } from '../components/BackupManager';
 import { useInvoiceStore } from '../store/invoiceStore';
+import { useToast } from '../components/ToastProvider';
 
 export const SettingsPage: React.FC = () => {
   const { gstPercentage, setGstPercentage } = useInvoiceStore();
+  const { showToast } = useToast();
   const [gstInput, setGstInput] = useState(gstPercentage.toString());
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   const handleGstChange = async () => {
     const newGst = parseFloat(gstInput);
     if (isNaN(newGst) || newGst < 0) {
-      alert('Please enter a valid GST percentage');
+      showToast('Please enter a valid GST percentage (0-100)', 'error', 4000);
       return;
     }
 
@@ -24,12 +26,13 @@ export const SettingsPage: React.FC = () => {
       if (result.success) {
         setGstPercentage(newGst);
         setSavedSuccess(true);
+        showToast(`GST percentage updated to ${newGst}%`, 'success', 4000);
         setTimeout(() => setSavedSuccess(false), 3000);
       } else {
-        alert(`Error: ${result.error}`);
+        showToast(`Error: ${result.error}`, 'error', 5000);
       }
     } catch (err) {
-      alert(`Failed to update GST: ${err}`);
+      showToast(`Failed to update GST`, 'error', 5000);
     }
   };
 
@@ -45,21 +48,25 @@ export const SettingsPage: React.FC = () => {
 
             {savedSuccess && (
               <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-                GST percentage updated successfully!
+                ✓ GST percentage updated successfully!
               </div>
             )}
 
             <div className="max-w-md">
-              <label className="block text-sm font-medium text-gray-700 mb-2">GST Rate (%)</label>
+              <label htmlFor="gst-input" className="block text-sm font-medium text-gray-700 mb-2">
+                GST Rate (%) <span className="text-red-600">*</span>
+              </label>
               <div className="flex gap-4">
                 <input
+                  id="gst-input"
                   type="number"
                   step="0.1"
                   min="0"
                   max="100"
                   value={gstInput}
                   onChange={(e) => setGstInput(e.target.value)}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  aria-label="GST Rate percentage"
                 />
                 <button
                   onClick={handleGstChange}
@@ -68,7 +75,7 @@ export const SettingsPage: React.FC = () => {
                   Save
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-2">Current: {gstPercentage}%</p>
+              <p className="text-sm text-gray-500 mt-2">Current: <strong>{gstPercentage}%</strong></p>
             </div>
           </div>
 
