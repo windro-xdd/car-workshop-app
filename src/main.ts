@@ -415,18 +415,22 @@ ipcMain.handle('print-invoice-pdf', async (_event, invoiceId: string) => {
     if (filePath) {
       await savePDFToFile(pdfBuffer, filePath);
 
-      const { execFile } = require('child_process');
-      const printCommand = process.platform === 'win32' ? 'powershell.exe' : 'lp';
-      
-      if (process.platform === 'win32') {
-        execFile(printCommand, [
-          '-Command',
-          `Start-Process -FilePath "${filePath}" -Verb Print -WindowStyle Hidden`,
-        ]);
-      } else {
-        execFile(printCommand, [filePath]);
-      }
+      // Create a hidden window to print the PDF
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+        },
+      });
 
+      printWindow.webContents.on('did-finish-load', () => {
+        printWindow.webContents.print({}, (success, failureReason) => {
+          if (!success) console.log('Print failed: ', failureReason);
+          printWindow.destroy();
+        });
+      });
+
+      printWindow.webContents.loadFile(filePath);
       return { success: true, data: { filePath, fileName: path.basename(filePath) } };
     } else {
       return { success: false, error: 'Save cancelled' };
