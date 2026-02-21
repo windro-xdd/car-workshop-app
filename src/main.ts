@@ -53,10 +53,15 @@ if (require('electron-squirrel-startup')) {
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'kripa-logo.ico')
+    : path.join(__dirname, '..', 'assets', 'kripa-logo.ico');
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     autoHideMenuBar: true,
+    icon: iconPath,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
