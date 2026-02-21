@@ -34,6 +34,16 @@ const electronAPI = {
 
   updateGstConfig: (data: GstConfig) =>
     ipcRenderer.invoke('update-gst-config', data) as Promise<IpcResponse<GstConfig>>,
+
+  generateInvoicePDF: (invoiceId: string) =>
+    ipcRenderer.invoke('generate-invoice-pdf', invoiceId) as Promise<
+      IpcResponse<{ filePath: string; fileName: string }>
+    >,
+
+  saveInvoicePDF: (invoiceId: string) =>
+    ipcRenderer.invoke('save-invoice-pdf', invoiceId) as Promise<
+      IpcResponse<{ filePath: string; fileName: string }>
+    >,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

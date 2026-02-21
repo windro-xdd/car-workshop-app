@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { InvoiceSummary } from '../components/InvoiceSummary';
 import { InvoiceTable } from '../components/InvoiceTable';
+import { InvoicePDFPreview } from '../components/InvoicePDFPreview';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { useItemStore } from '../store/itemStore';
 import { Invoice, LineItem } from '../../types';
@@ -27,6 +28,7 @@ export const InvoicePage: React.FC = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [selectedInvoiceForPDF, setSelectedInvoiceForPDF] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadItems();
@@ -162,6 +164,15 @@ export const InvoicePage: React.FC = () => {
     }
   };
 
+  const handleDownloadPDF = async (invoiceId: string) => {
+    const invoice = invoices?.find((inv) => inv.id === invoiceId);
+    if (!invoice) {
+      alert('Invoice not found');
+      return;
+    }
+    setSelectedInvoiceForPDF(invoice);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto">
@@ -213,7 +224,24 @@ export const InvoicePage: React.FC = () => {
             alert(`View invoice: ${invoice.invoiceNumber}`);
           }}
           onDeleteInvoice={handleDeleteInvoice}
+          onDownloadPDF={handleDownloadPDF}
         />
+
+        {selectedInvoiceForPDF && (
+          <InvoicePDFPreview
+            invoice={selectedInvoiceForPDF}
+            onClose={() => setSelectedInvoiceForPDF(null)}
+            onDownload={async (invoiceId: string) => {
+              const result = await window.electronAPI.saveInvoicePDF(invoiceId);
+              if (result.success) {
+                alert(`PDF saved: ${result.data?.fileName}`);
+                setSelectedInvoiceForPDF(null);
+              } else {
+                alert(`Error: ${result.error}`);
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );
