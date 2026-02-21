@@ -67,7 +67,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
               <td className="py-3 px-4 font-mono text-sm">{invoice.invoiceNumber}</td>
               <td className="py-3 px-4">{invoice.customerName}</td>
               <td className="text-right py-3 px-4">{formatCurrency(invoice.grossAmount)}</td>
-              <td className="text-right py-3 px-4 text-orange-600">
+              <td className="text-right py-3 px-4 text-orange-700">
                 {formatCurrency(invoice.gstAmount)}
               </td>
               <td className="text-right py-3 px-4 font-semibold">
@@ -90,30 +90,33 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 </span>
               </td>
               <td className="text-center py-3 px-4 space-x-2">
-                <button
-                  onClick={() => onSelectInvoice(invoice)}
-                  className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-sm"
-                >
-                  View
-                </button>
-                {onDownloadPDF && (
-                  <button
-                    onClick={() => onDownloadPDF(invoice.id)}
-                    className="px-2 py-1 text-green-600 hover:bg-green-50 rounded transition text-sm"
-                    title="Download PDF"
-                  >
-                    PDF
-                  </button>
-                )}
-                {onCreateAmendment && !invoice.isAmendment && (
-                  <button
-                    onClick={() => onCreateAmendment(invoice.id)}
-                    className="px-2 py-1 text-purple-600 hover:bg-purple-50 rounded transition text-sm"
-                    title="Create amendment for this invoice"
-                  >
-                    Amend
-                  </button>
-                )}
+               <button
+                   onClick={() => onSelectInvoice(invoice)}
+                   className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-sm"
+                   aria-label={`View invoice #${invoice.invoiceNumber}`}
+                 >
+                   View
+                 </button>
+                 {onDownloadPDF && (
+                   <button
+                     onClick={() => onDownloadPDF(invoice.id)}
+                     className="px-2 py-1 text-green-600 hover:bg-green-50 rounded transition text-sm"
+                     aria-label={`Download PDF for invoice #${invoice.invoiceNumber}`}
+                     title="Download PDF"
+                   >
+                     PDF
+                   </button>
+                 )}
+                 {onCreateAmendment && !invoice.isAmendment && (
+                   <button
+                     onClick={() => onCreateAmendment(invoice.id)}
+                     className="px-2 py-1 text-purple-600 hover:bg-purple-50 rounded transition text-sm"
+                     aria-label={`Create amendment for invoice #${invoice.invoiceNumber}`}
+                     title="Create amendment for this invoice"
+                   >
+                     Amend
+                   </button>
+                 )}
                 <button
                   onClick={() => handleDeleteClick(invoice)}
                   className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition text-sm"
