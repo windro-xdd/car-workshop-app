@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { InventoryPage } from './renderer/pages/InventoryPage';
 import { InvoicePage } from './renderer/pages/InvoicePage';
 import { SettingsPage } from './renderer/pages/SettingsPage';
+import { ReportingPage } from './renderer/pages/ReportingPage';
 import './index.css';
 
-type Page = 'inventory' | 'invoice' | 'settings';
+type Page = 'inventory' | 'invoice' | 'settings' | 'reporting';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('inventory');
@@ -39,16 +40,26 @@ const App: React.FC = () => {
               >
                 📄 Invoices
               </button>
-              <button
-                onClick={() => setCurrentPage('settings')}
-                className={`px-6 py-2 rounded-lg font-semibold transition ${
-                  currentPage === 'settings'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                }`}
-              >
-                ⚙️ Settings
-              </button>
+               <button
+                 onClick={() => setCurrentPage('settings')}
+                 className={`px-6 py-2 rounded-lg font-semibold transition ${
+                   currentPage === 'settings'
+                     ? 'bg-blue-600 text-white'
+                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                 }`}
+               >
+                 ⚙️ Settings
+               </button>
+               <button
+                 onClick={() => setCurrentPage('reporting')}
+                 className={`px-6 py-2 rounded-lg font-semibold transition ${
+                   currentPage === 'reporting'
+                     ? 'bg-blue-600 text-white'
+                     : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                 }`}
+               >
+                 📊 Reports
+               </button>
             </div>
           </div>
         </div>
@@ -57,6 +68,7 @@ const App: React.FC = () => {
       {currentPage === 'inventory' && <InventoryPage />}
       {currentPage === 'invoice' && <InvoicePage />}
       {currentPage === 'settings' && <SettingsPage />}
+      {currentPage === 'reporting' && <ReportingPage />}
     </div>
   );
 };
