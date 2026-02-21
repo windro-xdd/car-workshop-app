@@ -8,7 +8,43 @@ import { generateInvoicePDF, savePDFToFile } from './renderer/utils/pdfGenerator
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
-const prisma = new PrismaClient();
+// Dev: prisma/data/workshop.db relative to project root
+// Packaged: userData/workshop.db (copied from extraResource on first launch)
+function getDbPath(): string {
+  if (app.isPackaged) {
+    return path.join(app.getPath('userData'), 'workshop.db');
+  }
+  return path.join(app.getAppPath(), 'prisma', 'data', 'workshop.db');
+}
+
+function getSeedDbPath(): string {
+  return path.join(process.resourcesPath, 'workshop.db');
+}
+
+function ensureDatabase(): void {
+  const dbPath = getDbPath();
+  if (!fs.existsSync(dbPath)) {
+    if (app.isPackaged) {
+      const seedPath = getSeedDbPath();
+      if (fs.existsSync(seedPath)) {
+        fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+        fs.copyFileSync(seedPath, dbPath);
+      }
+    } else {
+      fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    }
+  }
+}
+
+ensureDatabase();
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: `file:${getDbPath()}`,
+    },
+  },
+});
 
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -527,7 +563,7 @@ ipcMain.handle('create-backup', async (_event, options?: { customPath?: boolean 
       await fs.promises.mkdir(backupDir, { recursive: true });
     }
 
-    const dbPath = path.join(app.getAppPath(), 'prisma', 'data', 'workshop.db');
+    const dbPath = getDbPath();
     await fs.promises.copyFile(dbPath, backupPath);
 
     return { success: true, data: { backupPath, fileName: path.basename(backupPath), timestamp } };
@@ -577,7 +613,7 @@ ipcMain.handle('list-backups', async () => {
 
 ipcMain.handle('restore-backup', async (_event, backupPath: string) => {
   try {
-    const dbPath = path.join(app.getAppPath(), 'prisma', 'data', 'workshop.db');
+    const dbPath = getDbPath();
 
     await prisma.$disconnect();
 
