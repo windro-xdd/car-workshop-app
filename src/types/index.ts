@@ -28,8 +28,8 @@ export interface Invoice {
   invoiceNumber: string;
   invoiceDate: Date;
   customerName: string;
-  customerPhone?: string;
-  customerEmail?: string;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
   grossAmount: number;
   gstAmount: number;
   netTotal: number;
@@ -38,6 +38,7 @@ export interface Invoice {
   isAmendment: boolean;
   originalInvoiceId?: string;
   notes?: string;
+  lineItems?: LineItem[];
   createdAt: Date;
   updatedAt: Date;
 }

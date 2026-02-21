@@ -6,12 +6,14 @@ interface InvoiceTableProps {
   invoices: Invoice[];
   onSelectInvoice: (invoice: Invoice) => void;
   onDeleteInvoice: (id: string) => void;
+  onDownloadPDF?: (invoiceId: string) => Promise<void>;
 }
 
 export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   invoices,
   onSelectInvoice,
   onDeleteInvoice,
+  onDownloadPDF,
 }) => {
   if (invoices.length === 0) {
     return (
@@ -72,6 +74,15 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 >
                   View
                 </button>
+                {onDownloadPDF && (
+                  <button
+                    onClick={() => onDownloadPDF(invoice.id)}
+                    className="px-2 py-1 text-green-600 hover:bg-green-50 rounded transition text-sm"
+                    title="Download PDF"
+                  >
+                    PDF
+                  </button>
+                )}
                 <button
                   onClick={() => onDeleteInvoice(invoice.id)}
                   className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition text-sm"
