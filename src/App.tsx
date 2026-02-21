@@ -7,6 +7,7 @@ import { LoginPage } from './renderer/pages/LoginPage';
 import { useUserStore } from './renderer/store/userStore';
 import { ToastProvider } from './renderer/components/ToastProvider';
 import { ModalProvider } from './renderer/components/ModalProvider';
+import kripaLogo from './assets/kripa-logo.png';
 import './index.css';
 
 type Page = 'inventory' | 'invoice' | 'settings' | 'reporting';
@@ -36,11 +37,7 @@ const App: React.FC = () => {
           }`}>
             <div className="h-16 flex items-center px-6 border-b border-zinc-100 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-50 text-brand-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                    <path fillRule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.925 1.925 0 00-2.282.818l-1.07 1.852a1.92 1.92 0 00.333 2.365l1.258 1.03c.11.09.192.225.211.37A7.492 7.492 0 004.5 12c0 .26.015.515.045.766.019.145-.063.28-.173.37l-1.258 1.03a1.92 1.92 0 00-.333 2.365l1.07 1.852a1.925 1.925 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.31.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h2.144c.917 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.675-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.925 1.925 0 002.28-.818l1.07-1.852a1.92 1.92 0 00-.332-2.365l-1.258-1.03c-.111-.09-.193-.225-.211-.37a7.492 7.492 0 00-.045-.766c-.019-.145.062-.28.173-.37l1.258-1.03a1.92 1.92 0 00.332-2.365l-1.07-1.852a1.925 1.925 0 00-2.28-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.986-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.925 1.925 0 00-1.85-1.567h-2.144zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clipRule="evenodd" />
-                  </svg>
-                </div>
+                <img src={kripaLogo} alt="Kripa Car Care" className="w-8 h-8" />
                 <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Kripa Car Care</h1>
               </div>
               <button 
