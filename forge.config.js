@@ -23,7 +23,7 @@ function copyPrismaModules(buildPath, _electronVersion, _platform, _arch, callba
 module.exports = {
   packagerConfig: {
     asar: {
-      unpack: '**/*.node',
+      unpack: '{**/*.node,**/node_modules/.prisma/**,**/node_modules/@prisma/**}',
     },
     icon: './assets/kripa-logo',
     extraResource: [
@@ -55,10 +55,10 @@ module.exports = {
     },
   ],
   plugins: [
-    // {
-    //   name: '@electron-forge/plugin-auto-unpack-natives',
-    //   config: {},
-    // },
+    {
+      name: '@electron-forge/plugin-auto-unpack-natives',
+      config: {},
+    },
     {
       name: '@electron-forge/plugin-webpack',
       config: {
