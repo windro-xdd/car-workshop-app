@@ -10,10 +10,10 @@ export interface PDFGeneratorOptions {
 }
 
 const DEFAULT_OPTIONS: PDFGeneratorOptions = {
-  companyName: 'Kripa Car Care Workshop',
-  companyPhone: '+91-XXXXXXXXXX',
-  companyEmail: 'info@kripacars.com',
-  companyAddress: 'Your Workshop Address, City, State 000000',
+  companyName: 'KRIPA CAR CARE',
+  companyPhone: '9745286370 | 9745286377 | 9995102092',
+  companyEmail: 'kripacarcare@gmail.com',
+  companyAddress: 'Opposite to old toll booth, Vimangalam, PO Kadaloor, Moodadi',
 };
 
 export const generateInvoicePDF = async (
@@ -24,7 +24,7 @@ export const generateInvoicePDF = async (
   return new Promise((resolve, reject) => {
     try {
       const config = { ...DEFAULT_OPTIONS, ...options };
-      const doc = new PDFDocument({ margin: 40 });
+      const doc = new PDFDocument({ margin: 40, size: 'A4' });
       const chunks: Buffer[] = [];
 
       doc.on('data', (chunk) => chunks.push(chunk));
@@ -32,17 +32,23 @@ export const generateInvoicePDF = async (
       doc.on('error', reject);
 
       // Header with company info
-      doc.fontSize(20).font('Helvetica-Bold').text('🚗 ' + config.companyName, { align: 'center' });
-      doc.fontSize(10).font('Helvetica').text(config.companyAddress || '', { align: 'center' });
-      doc.text(`Phone: ${config.companyPhone} | Email: ${config.companyEmail}`, { align: 'center' });
+      doc.fontSize(24).font('Helvetica-Bold').fillColor('#000080').text(config.companyName || '', 50, 50, { align: 'left' });
+      doc.fontSize(10).font('Helvetica-Oblique').fillColor('#333333').text('Premium Car Workshop Services', 50, 80, { align: 'left' });
+      
+      doc.moveTo(50, 100).lineTo(555, 100).strokeColor('#888888').stroke();
+      
+      doc.fontSize(10).font('Helvetica').fillColor('#000000');
+      doc.text('Address: ', 50, 115, { continued: true }).font('Helvetica').text(config.companyAddress || '');
+      doc.font('Helvetica-Bold').text('Phone: ', 50, 130, { continued: true }).font('Helvetica').text(config.companyPhone || '');
+      doc.font('Helvetica-Bold').text('Email: ', 50, 145, { continued: true }).font('Helvetica').text(config.companyEmail || '');
 
-      doc.moveTo(40, 130).lineTo(555, 130).stroke();
+      doc.moveTo(50, 170).lineTo(555, 170).strokeColor('#000000').stroke();
 
       // Invoice details section
-      doc.fontSize(14).font('Helvetica-Bold').text('INVOICE', 50, 150);
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('INVOICE', 50, 190);
 
       const detailsX = 50;
-      const detailsY = 180;
+      const detailsY = 220;
       doc.fontSize(10).font('Helvetica');
 
       // Left column: Invoice details

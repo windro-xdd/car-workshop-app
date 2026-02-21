@@ -20,6 +20,11 @@ const electronAPI = {
   deleteItem: (id: string) =>
     ipcRenderer.invoke('delete-item', id) as Promise<IpcResponse<void>>,
 
+  bulkImportItems: (data: { items: any[], filePath: string }) =>
+    ipcRenderer.invoke('bulk-import-items', data) as Promise<
+      IpcResponse<{ success: number; failed: number; errors: string[] }>
+    >,
+
   getInvoices: () =>
     ipcRenderer.invoke('get-invoices') as Promise<IpcResponse<Invoice[]>>,
 
@@ -45,14 +50,19 @@ const electronAPI = {
       IpcResponse<{ filePath: string; fileName: string }>
     >,
 
+  printInvoicePDF: (invoiceId: string) =>
+    ipcRenderer.invoke('print-invoice-pdf', invoiceId) as Promise<
+      IpcResponse<{ filePath: string; fileName: string }>
+    >,
+
   createAmendment: (data: any) =>
     ipcRenderer.invoke('create-amendment', data) as Promise<IpcResponse<Invoice>>,
 
   listAmendmentsForInvoice: (invoiceId: string) =>
     ipcRenderer.invoke('list-amendments-for-invoice', invoiceId) as Promise<IpcResponse<Invoice[]>>,
 
-  createBackup: () =>
-    ipcRenderer.invoke('create-backup') as Promise<
+  createBackup: (options?: { customPath?: boolean }) =>
+    ipcRenderer.invoke('create-backup', options) as Promise<
       IpcResponse<{ backupPath: string; fileName: string; timestamp: string }>
     >,
 

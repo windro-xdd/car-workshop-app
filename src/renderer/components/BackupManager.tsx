@@ -37,17 +37,19 @@ export const BackupManager: React.FC<BackupManagerProps> = ({ onBackupCreated })
     }
   };
 
-  const handleCreateBackup = async () => {
+  const handleCreateBackup = async (customPath = false) => {
     setIsLoading(true);
     setError(null);
     setSuccess(null);
 
     try {
-      const result = await window.electronAPI.createBackup();
+      const result = await window.electronAPI.createBackup(customPath ? { customPath: true } : undefined);
       if (result.success) {
-        setSuccess(`Backup created: ${result.data?.fileName}`);
+        setSuccess(`Backup saved: ${result.data?.fileName}`);
         onBackupCreated();
         await loadBackups();
+      } else if (result.error === 'Backup cancelled') {
+        // User cancelled the dialog, no error to show
       } else {
         setError(result.error || 'Failed to create backup');
       }
@@ -118,55 +120,72 @@ export const BackupManager: React.FC<BackupManagerProps> = ({ onBackupCreated })
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">Database Backups</h2>
-
+      <div className="bg-white">
         {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg shadow-sm text-sm">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-            {success}
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg shadow-sm text-sm flex items-center">
+            <span className="mr-2">✓</span> {success}
           </div>
         )}
 
-        <button
-          onClick={handleCreateBackup}
-          disabled={isLoading}
-          className="mb-6 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition font-semibold"
-        >
-          {isLoading ? 'Creating Backup...' : '💾 Create New Backup'}
-        </button>
+        <div className="mb-6 flex gap-3">
+          <button
+            onClick={() => handleCreateBackup(false)}
+            disabled={isLoading}
+            className="px-5 py-2.5 bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 shadow-sm disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed transition-all duration-200 ease-out font-medium text-sm flex items-center"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+            </svg>
+            {isLoading ? 'Creating...' : 'Quick Backup'}
+          </button>
+          <button
+            onClick={() => handleCreateBackup(true)}
+            disabled={isLoading}
+            className="px-5 py-2.5 bg-white text-zinc-700 border border-zinc-300 rounded-lg hover:bg-zinc-50 shadow-sm disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed transition-all duration-200 ease-out font-medium text-sm flex items-center"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2-2H8L6 7H5a2 2 0 00-2 0z"></path>
+            </svg>
+            Save As...
+          </button>
+        </div>
 
         {backups.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <p>No backups found. Create your first backup now.</p>
+          <div className="text-center py-12 border-2 border-dashed border-zinc-200 rounded-xl">
+            <svg className="mx-auto h-12 w-12 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+            </svg>
+            <h3 className="mt-2 text-sm font-semibold text-zinc-900">No backups</h3>
+            <p className="mt-1 text-sm text-zinc-500">Get started by creating your first backup.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+          <div className="border border-zinc-200 rounded-lg overflow-hidden">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b-2 border-gray-300 bg-gray-50">
-                  <th className="text-left py-3 px-4">Backup File</th>
-                  <th className="text-center py-3 px-4">Date</th>
-                  <th className="text-right py-3 px-4">Size</th>
-                  <th className="text-center py-3 px-4">Actions</th>
+                <tr className="bg-zinc-50/50 border-b border-zinc-200">
+                  <th className="px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Backup File</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center">Date</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Size</th>
+                  <th className="px-6 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-zinc-100">
                 {backups.map((backup) => (
-                  <tr key={backup.filePath} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-mono text-sm">{backup.fileName}</td>
-                    <td className="text-center py-3 px-4 text-sm">{formatDate(backup.createdAt)}</td>
-                    <td className="text-right py-3 px-4 text-sm">{formatFileSize(backup.size)}</td>
-                    <td className="text-center py-3 px-4 space-x-2">
+                  <tr key={backup.filePath} className="hover:bg-zinc-50/50 transition-colors duration-150 ease-in-out bg-white">
+                    <td className="px-6 py-4 text-sm text-zinc-900 font-mono">{backup.fileName}</td>
+                    <td className="px-6 py-4 text-sm text-zinc-500 text-center">{formatDate(backup.createdAt)}</td>
+                    <td className="px-6 py-4 text-sm text-zinc-500 text-right">{formatFileSize(backup.size)}</td>
+                    <td className="px-6 py-4 text-right space-x-2">
                       <button
                         onClick={() => handleRestoreBackup(backup.filePath, backup.fileName)}
                         disabled={isLoading}
-                        className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-sm disabled:opacity-50"
+                        className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-brand-600 bg-transparent hover:bg-brand-50 transition-colors duration-150 disabled:opacity-50"
                         title="Restore this backup"
                       >
                         Restore
@@ -174,7 +193,7 @@ export const BackupManager: React.FC<BackupManagerProps> = ({ onBackupCreated })
                       <button
                         onClick={() => handleDeleteBackup(backup.filePath, backup.fileName)}
                         disabled={isLoading}
-                        className="px-3 py-1 text-red-600 hover:bg-red-50 rounded transition text-sm disabled:opacity-50"
+                        className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-zinc-500 bg-transparent hover:text-red-600 hover:bg-red-50 transition-colors duration-150 disabled:opacity-50"
                         title="Delete this backup"
                       >
                         Delete
@@ -188,14 +207,18 @@ export const BackupManager: React.FC<BackupManagerProps> = ({ onBackupCreated })
         )}
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-        <h3 className="font-semibold text-blue-900 mb-2">💡 Backup Tips</h3>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-          <li>Create regular backups to prevent data loss</li>
-          <li>Store backups in a safe location (external drive recommended)</li>
-          <li>Before restoring, a backup of current data will be created automatically</li>
-          <li>Backups are stored in: Documents/Workshop Backups</li>
-        </ul>
+      <div className="bg-brand-50/50 border border-brand-100 p-5 rounded-xl flex gap-3 items-start">
+        <svg className="w-5 h-5 text-brand-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <div>
+          <h3 className="font-semibold text-brand-900 text-sm mb-1">Backup Tips</h3>
+          <ul className="text-sm text-brand-700/80 space-y-1 list-disc list-inside">
+            <li>Create regular backups to prevent data loss</li>
+            <li>Store backups in a safe location (external drive recommended)</li>
+            <li>Before restoring, a backup of current data will be created automatically</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

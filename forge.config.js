@@ -1,9 +1,34 @@
+const path = require('path');
+const fs = require('fs-extra');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
+function copyPrismaModules(buildPath, _electronVersion, _platform, _arch, callback) {
+  const srcNodeModules = path.resolve(__dirname, 'node_modules');
+  const destNodeModules = path.join(buildPath, 'node_modules');
+
+  const modulesToCopy = ['@prisma/client', '.prisma/client'];
+
+  Promise.all(
+    modulesToCopy.map((mod) => {
+      const src = path.join(srcNodeModules, mod);
+      const dest = path.join(destNodeModules, mod);
+      return fs.copy(src, dest);
+    })
+  )
+    .then(() => callback())
+    .catch((err) => callback(err));
+}
+
 module.exports = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpack: '**/*.node',
+    },
+    extraResource: [
+      './prisma/data/workshop.db',
+    ],
+    afterCopy: [copyPrismaModules],
   },
   rebuildConfig: {},
   makers: [
@@ -57,8 +82,8 @@ module.exports = {
       [FuseV1Options.EnableCookieEncryption]: true,
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
-      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false,
+      [FuseV1Options.OnlyLoadAppFromAsar]: false,
     }),
   ],
 };

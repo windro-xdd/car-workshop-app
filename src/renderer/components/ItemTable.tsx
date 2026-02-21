@@ -34,71 +34,69 @@ export const ItemTable: React.FC<ItemTableProps> = ({
     }
   };
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-500">Loading items...</div>;
+    return <div className="text-center py-8 text-zinc-500">Loading items...</div>;
   }
 
   if (items.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-zinc-500">
         No items found. Add an item to get started.
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b">
-          <tr>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Code</th>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">
-              Category
-            </th>
-            <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">
-              Unit Price (₹)
-            </th>
-            <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, index) => (
-            <tr
-              key={item.id}
-              className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
-            >
-              <td className="px-6 py-3 text-sm text-gray-900 font-mono">{item.code}</td>
-              <td className="px-6 py-3 text-sm text-gray-900">{item.name}</td>
-              <td className="px-6 py-3 text-sm text-gray-700">{item.category}</td>
-              <td className="px-6 py-3 text-sm text-gray-900 text-right font-semibold">
-                ₹{item.unitPrice.toFixed(2)}
-              </td>
-              <td className="px-6 py-3 text-center">
-                <button
-                  onClick={() => onEdit(item)}
-                  disabled
-                  title="Edit feature coming soon"
-                  className="mr-2 px-3 py-1 text-sm bg-gray-100 text-gray-500 rounded opacity-50 cursor-not-allowed"
-                  aria-label={`Edit ${item.name} (feature coming soon)`}
-                >
-                  Edit
-                </button>
-                {canDelete && (
-                  <button
-                    onClick={() => handleDeleteClick(item)}
-                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                    aria-label={`Delete ${item.name}`}
-                  >
-                    Delete
-                  </button>
-                )}
-              </td>
+    <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-zinc-50/50 border-b border-zinc-200">
+              <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Code</th>
+              <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Category</th>
+              <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Unit Price (₹)</th>
+              <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-zinc-100">
+            {items.map((item) => (
+              <tr
+                key={item.id}
+                className="hover:bg-zinc-50/50 transition-colors duration-150 ease-in-out bg-white"
+              >
+                <td className="px-6 py-4 text-sm text-zinc-900 font-mono">{item.code}</td>
+                <td className="px-6 py-4 text-sm text-zinc-900 font-medium">{item.name}</td>
+                <td className="px-6 py-4 text-sm text-zinc-600">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800">
+                    {item.category}
+                  </span>
+                </td>
+                <td className="px-6 py-4 text-sm text-zinc-900 text-right font-semibold">
+                  {item.unitPrice.toFixed(2)}
+                </td>
+                <td className="px-6 py-4 text-right space-x-2">
+                   <button
+                     onClick={() => onEdit(item)}
+                     className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-zinc-600 bg-transparent hover:text-brand-600 hover:bg-brand-50 transition-colors duration-150"
+                     aria-label={`Edit ${item.name}`}
+                   >
+                     Edit
+                   </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => handleDeleteClick(item)}
+                      className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-zinc-500 bg-transparent hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
+                      aria-label={`Delete ${item.name}`}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

@@ -42,34 +42,46 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative w-full">
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-left bg-white flex justify-between items-center"
+        onClick={(e) => {
+          e.preventDefault();
+          setIsOpen(!isOpen);
+        }}
+        className={`w-full px-3 py-2 text-sm bg-white border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all duration-200 text-left flex justify-between items-center ${
+          isOpen ? 'border-brand-500 ring-2 ring-brand-500/20' : 'border-zinc-200 hover:border-zinc-300'
+        }`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        <span className="text-gray-700">
+        <span className={selectedItem ? "text-zinc-900 font-medium" : "text-zinc-400"}>
           {selectedItem
             ? `${selectedItem.name} (₹${selectedItem.unitPrice.toFixed(2)})`
-            : 'Select Item'}
+            : 'Select an item...'}
         </span>
-        <span className="text-gray-500">▼</span>
+        <svg className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-          <input
-            type="text"
-            placeholder="Search by name, code, or category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-2 border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            autoFocus
-          />
-          <ul className="max-h-48 overflow-y-auto" role="listbox">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-zinc-200 rounded-xl shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="p-2 border-b border-zinc-100">
+            <div className="relative">
+              <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm bg-zinc-50 border-none rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                autoFocus
+              />
+            </div>
+          </div>
+          <ul className="max-h-60 overflow-y-auto p-1" role="listbox">
             {filteredItems.length === 0 ? (
-              <li className="px-3 py-2 text-gray-500 text-sm">No items found</li>
+              <li className="px-3 py-4 text-zinc-500 text-sm text-center">No items found</li>
             ) : (
               filteredItems.map((item) => (
                 <li
@@ -78,16 +90,23 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                   aria-selected={item.id === selectedItemId}
                 >
                   <button
-                    onClick={() => handleSelect(item.id)}
-                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleSelect(item.id);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 text-sm rounded-lg transition-colors flex flex-col ${
                       item.id === selectedItemId
-                        ? 'bg-blue-100 text-blue-900'
-                        : 'hover:bg-gray-100'
+                        ? 'bg-brand-50 text-brand-900'
+                        : 'hover:bg-zinc-50 text-zinc-700'
                     }`}
                   >
                     <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {item.code} • {item.category} • ₹{item.unitPrice.toFixed(2)}
+                    <div className="text-xs text-zinc-500 mt-0.5 flex items-center">
+                      <span className="font-mono">{item.code}</span>
+                      <span className="mx-1.5">•</span>
+                      <span>{item.category}</span>
+                      <span className="mx-1.5">•</span>
+                      <span className="font-medium text-zinc-700">₹{item.unitPrice.toFixed(2)}</span>
                     </div>
                   </button>
                 </li>

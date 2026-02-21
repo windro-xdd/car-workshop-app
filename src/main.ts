@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
@@ -8,7 +8,43 @@ import { generateInvoicePDF, savePDFToFile } from './renderer/utils/pdfGenerator
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
-const prisma = new PrismaClient();
+// Dev: prisma/data/workshop.db relative to project root
+// Packaged: userData/workshop.db (copied from extraResource on first launch)
+function getDbPath(): string {
+  if (app.isPackaged) {
+    return path.join(app.getPath('userData'), 'workshop.db');
+  }
+  return path.join(app.getAppPath(), 'prisma', 'data', 'workshop.db');
+}
+
+function getSeedDbPath(): string {
+  return path.join(process.resourcesPath, 'workshop.db');
+}
+
+function ensureDatabase(): void {
+  const dbPath = getDbPath();
+  if (!fs.existsSync(dbPath)) {
+    if (app.isPackaged) {
+      const seedPath = getSeedDbPath();
+      if (fs.existsSync(seedPath)) {
+        fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+        fs.copyFileSync(seedPath, dbPath);
+      }
+    } else {
+      fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+    }
+  }
+}
+
+ensureDatabase();
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: `file:${getDbPath()}`,
+    },
+  },
+});
 
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -20,6 +56,7 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
@@ -27,8 +64,9 @@ const createWindow = () => {
     },
   });
 
+  Menu.setApplicationMenu(null);
+
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
-  mainWindow.webContents.openDevTools();
 };
 
 app.whenReady().then(() => {
@@ -109,12 +147,70 @@ ipcMain.handle('update-item', async (_event, data) => {
 
 ipcMain.handle('delete-item', async (_event, id: string) => {
   try {
+    // Check if item is referenced by any invoice line items
+    const usageCount = await prisma.lineItem.count({
+      where: { itemId: id },
+    });
+
+    if (usageCount > 0) {
+      return {
+        success: false,
+        error: `Cannot delete this item because it is used in ${usageCount} invoice line item${usageCount > 1 ? 's' : ''}. Remove it from all invoices first.`,
+      };
+    }
+
     await prisma.item.delete({
       where: { id },
     });
     return { success: true };
   } catch (error) {
     console.error('Error deleting item:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+ipcMain.handle('bulk-import-items', async (_event, data: { items: any[], filePath: string }) => {
+  try {
+    const { items } = data;
+    const results: { success: number; failed: number; errors: string[] } = {
+      success: 0,
+      failed: 0,
+      errors: [],
+    };
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      try {
+        if (!item.code || !item.name || !item.category || item.unitPrice === undefined) {
+          throw new Error(`Row ${i + 1}: Missing required fields (code, name, category, unitPrice)`);
+        }
+
+        const unitPrice = typeof item.unitPrice === 'string' ? parseFloat(item.unitPrice) : item.unitPrice;
+        if (isNaN(unitPrice) || unitPrice < 0) {
+          throw new Error(`Row ${i + 1}: Invalid unit price`);
+        }
+
+        await prisma.item.create({
+          data: {
+            code: String(item.code).trim(),
+            name: String(item.name).trim(),
+            category: String(item.category).trim(),
+            unitPrice: Number(unitPrice),
+          },
+        });
+        results.success++;
+      } catch (itemError) {
+        results.failed++;
+        results.errors.push(itemError instanceof Error ? itemError.message : 'Unknown error');
+      }
+    }
+
+    return { success: true, data: results };
+  } catch (error) {
+    console.error('Error bulk importing items:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -304,6 +400,54 @@ ipcMain.handle('save-invoice-pdf', async (_event, invoiceId: string) => {
   }
 });
 
+ipcMain.handle('print-invoice-pdf', async (_event, invoiceId: string) => {
+  try {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { lineItems: true },
+    });
+
+    if (!invoice) {
+      return { success: false, error: 'Invoice not found' };
+    }
+
+    const items = await prisma.item.findMany();
+    const pdfBuffer = await generateInvoicePDF(invoice, items);
+    const fileName = `${invoice.invoiceNumber.replace('/', '-')}.pdf`;
+
+    const { filePath } = await dialog.showSaveDialog(mainWindow!, {
+      defaultPath: path.join(app.getPath('documents'), fileName),
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+    });
+
+    if (filePath) {
+      await savePDFToFile(pdfBuffer, filePath);
+
+      const { execFile } = require('child_process');
+      const printCommand = process.platform === 'win32' ? 'powershell.exe' : 'lp';
+      
+      if (process.platform === 'win32') {
+        execFile(printCommand, [
+          '-Command',
+          `Start-Process -FilePath "${filePath}" -Verb Print -WindowStyle Hidden`,
+        ]);
+      } else {
+        execFile(printCommand, [filePath]);
+      }
+
+      return { success: true, data: { filePath, fileName: path.basename(filePath) } };
+    } else {
+      return { success: false, error: 'Save cancelled' };
+    }
+  } catch (error) {
+    console.error('Error printing PDF:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
 // ===== AMENDMENT HANDLERS =====
 
 ipcMain.handle('create-amendment', async (_event, data) => {
@@ -395,21 +539,34 @@ ipcMain.handle('list-amendments-for-invoice', async (_event, invoiceId: string) 
 
 // ===== BACKUP HANDLERS =====
 
-ipcMain.handle('create-backup', async () => {
+ipcMain.handle('create-backup', async (_event, options?: { customPath?: boolean }) => {
   try {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFileName = `workshop-backup-${timestamp}.db`;
-    const backupPath = path.join(app.getPath('documents'), 'Workshop Backups', backupFileName);
+    let backupPath: string;
 
-    // Ensure backup directory exists
-    const backupDir = path.dirname(backupPath);
-    await fs.promises.mkdir(backupDir, { recursive: true });
+    if (options?.customPath && mainWindow) {
+      const result = await dialog.showSaveDialog(mainWindow, {
+        title: 'Save Backup As',
+        defaultPath: backupFileName,
+        filters: [{ name: 'Database Backup', extensions: ['db'] }],
+      });
 
-    // Copy database file
-    const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db');
+      if (result.canceled || !result.filePath) {
+        return { success: false, error: 'Backup cancelled' };
+      }
+
+      backupPath = result.filePath;
+    } else {
+      backupPath = path.join(app.getPath('documents'), 'Workshop Backups', backupFileName);
+      const backupDir = path.dirname(backupPath);
+      await fs.promises.mkdir(backupDir, { recursive: true });
+    }
+
+    const dbPath = getDbPath();
     await fs.promises.copyFile(dbPath, backupPath);
 
-    return { success: true, data: { backupPath, fileName: backupFileName, timestamp } };
+    return { success: true, data: { backupPath, fileName: path.basename(backupPath), timestamp } };
   } catch (error) {
     console.error('Error creating backup:', error);
     return {
@@ -456,12 +613,10 @@ ipcMain.handle('list-backups', async () => {
 
 ipcMain.handle('restore-backup', async (_event, backupPath: string) => {
   try {
-    const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db');
+    const dbPath = getDbPath();
 
-    // Close Prisma connection before restoring
     await prisma.$disconnect();
 
-    // Create backup of current DB before restoring
     const currentBackupPath = path.join(
       app.getPath('documents'),
       'Workshop Backups',
@@ -470,12 +625,9 @@ ipcMain.handle('restore-backup', async (_event, backupPath: string) => {
     await fs.promises.mkdir(path.dirname(currentBackupPath), { recursive: true });
     await fs.promises.copyFile(dbPath, currentBackupPath);
 
-    // Restore from backup
     await fs.promises.copyFile(backupPath, dbPath);
 
-    // Reinitialize Prisma connection
-    const newPrisma = new PrismaClient();
-    Object.assign(prisma, newPrisma);
+    await prisma.$connect();
 
     return { success: true, data: { message: 'Backup restored successfully', backupPath: currentBackupPath } };
   } catch (error) {
@@ -500,7 +652,7 @@ ipcMain.handle('delete-backup', async (_event, backupPath: string) => {
   }
 });
 
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 ipcMain.handle('register-user', async (_event, input: any) => {
   try {

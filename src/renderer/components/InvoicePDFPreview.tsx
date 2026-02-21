@@ -4,54 +4,73 @@ import { Invoice } from '../../types';
 interface InvoicePDFPreviewProps {
   invoice: Invoice;
   onClose: () => void;
-  onDownload: (invoiceId: string) => Promise<void>;
 }
 
 export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
   invoice,
   onClose,
-  onDownload,
 }) => {
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
+  const handleSave = async () => {
+    setIsProcessing(true);
     setError(null);
     try {
-      await onDownload(invoice.id);
+      await window.electronAPI.saveInvoicePDF(invoice.id);
       alert(`PDF saved successfully for ${invoice.invoiceNumber}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download PDF');
+      setError(err instanceof Error ? err.message : 'Failed to save PDF');
     } finally {
-      setIsDownloading(false);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSaveAndPrint = async () => {
+    setIsProcessing(true);
+    setError(null);
+    try {
+      await window.electronAPI.printInvoicePDF(invoice.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save and print PDF');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-96 overflow-hidden flex flex-col">
-        <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 border border-zinc-200">
+        <div className="bg-brand-600 text-white p-4 flex justify-between items-center shrink-0">
           <h2 className="text-xl font-bold">Invoice Preview: {invoice.invoiceNumber}</h2>
           <button
             onClick={onClose}
-            className="text-white hover:text-gray-200 text-2xl font-bold"
+            className="text-white hover:text-zinc-200 text-2xl font-bold"
           >
             ✕
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="bg-white p-6 rounded border border-gray-300">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold">🚗 Kripa Car Care Workshop</h1>
-              <p className="text-sm text-gray-600">Your Workshop Address, City, State 000000</p>
-              <p className="text-sm text-gray-600">Phone: +91-XXXXXXXXXX | Email: info@kripacars.com</p>
+        <div className="flex-1 overflow-y-auto bg-zinc-200 flex justify-center p-6 sm:p-8">
+          <div className="bg-white p-10 sm:p-14 shadow-md border border-zinc-300 w-full max-w-[794px] min-h-[1123px] flex flex-col shrink-0">
+            <div className="text-left mb-6">
+              <h1 className="text-3xl font-bold text-[#000080] tracking-tight mb-1">KRIPA CAR CARE</h1>
+              <p className="text-sm italic text-zinc-800 mb-4">Premium Car Workshop Services</p>
+              
+              <div className="border-t border-zinc-400 pt-3 space-y-1">
+                <p className="text-sm text-black">
+                  <span className="font-bold">Address:</span> Opposite to old toll booth, Vimangalam, PO Kadaloor, Moodadi
+                </p>
+                <p className="text-sm text-black">
+                  <span className="font-bold">Phone:</span> 9745286370 | 9745286377 | 9995102092
+                </p>
+                <p className="text-sm text-black">
+                  <span className="font-bold">Email:</span> kripacarcare@gmail.com
+                </p>
+              </div>
             </div>
 
-            <hr className="my-4" />
-
-            <div className="grid grid-cols-2 gap-8 mb-6">
+            <div className="grid grid-cols-2 gap-8 mb-6 mt-8">
               <div>
                 <h3 className="font-bold text-sm mb-2">INVOICE DETAILS</h3>
                 <p className="text-sm">
@@ -78,7 +97,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
             <table className="w-full mb-6 text-sm">
               <thead>
-                <tr className="border-b-2 border-gray-400">
+                <tr className="border-b-2 border-zinc-400">
                   <th className="text-left py-2">Item</th>
                   <th className="text-center py-2">Qty</th>
                   <th className="text-right py-2">Unit Price</th>
@@ -88,7 +107,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
               <tbody>
                 {invoice.lineItems && invoice.lineItems.length > 0 ? (
                   invoice.lineItems.map((item: any) => (
-                    <tr key={item.id} className="border-b border-gray-200">
+                    <tr key={item.id} className="border-b border-zinc-200">
                       <td className="py-2">Item #{item.itemId}</td>
                       <td className="text-center py-2">{item.quantity}</td>
                       <td className="text-right py-2">₹{item.unitPrice.toFixed(2)}</td>
@@ -97,7 +116,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={4} className="text-center py-4 text-gray-500">
+                    <td colSpan={4} className="text-center py-4 text-zinc-500">
                       No items
                     </td>
                   </tr>
@@ -115,14 +134,14 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                   <span>GST ({invoice.gstPercentage}%):</span>
                   <span>₹{invoice.gstAmount.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold border-t-2 border-gray-400 pt-2">
+                <div className="flex justify-between text-lg font-bold border-t-2 border-zinc-400 pt-2">
                   <span>TOTAL:</span>
                   <span>₹{invoice.netTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            <p className="text-center text-xs text-gray-500">
+            <p className="text-center text-xs text-zinc-500">
               Thank you for your business!
             </p>
           </div>
@@ -134,19 +153,26 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
           </div>
         )}
 
-        <div className="bg-gray-100 p-4 flex gap-4 justify-end">
+        <div className="bg-zinc-100 p-4 flex gap-4 justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+            className="px-6 py-2 bg-zinc-500 text-white rounded-lg hover:bg-zinc-600 transition"
           >
             Close
           </button>
           <button
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            onClick={handleSave}
+            disabled={isProcessing}
+            className="px-6 py-2 bg-zinc-600 text-white rounded-lg hover:bg-zinc-700 disabled:bg-zinc-400 disabled:cursor-not-allowed transition"
           >
-            {isDownloading ? 'Downloading...' : '⬇ Download PDF'}
+            {isProcessing ? 'Processing...' : 'Save'}
+          </button>
+          <button
+            onClick={handleSaveAndPrint}
+            disabled={isProcessing}
+            className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:bg-zinc-400 disabled:cursor-not-allowed transition"
+          >
+            {isProcessing ? 'Processing...' : 'Save & Print'}
           </button>
         </div>
       </div>

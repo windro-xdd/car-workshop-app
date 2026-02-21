@@ -67,35 +67,41 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">Customer Information</h2>
-        <div className="grid grid-cols-1 gap-4">
-          <div>
-            <label htmlFor="customerName" className="block text-sm font-medium mb-2">
-              Customer Name <span className="text-red-600">*</span>
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-zinc-200">
+        <div className="border-b border-zinc-100 pb-4 mb-6 flex items-center">
+          <svg className="w-5 h-5 mr-2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <h2 className="text-lg font-semibold text-zinc-900 tracking-tight">Customer Details</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div className="md:col-span-2">
+            <label htmlFor="customerName" className="block text-sm font-medium text-zinc-700 mb-1.5">
+              Customer Name <span className="text-red-500">*</span>
             </label>
             <input
               id="customerName"
               type="text"
-              placeholder="Enter customer name"
+              placeholder="e.g., Rajesh Kumar"
               value={customerName}
               onChange={(e) => {
                 setCustomerName(e.target.value);
                 setErrors((prev) => ({ ...prev, customerName: undefined }));
                 handleCustomerChange();
               }}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.customerName ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 text-sm bg-white border rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all duration-200 ${
+                errors.customerName ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-zinc-200 focus:border-brand-500'
               }`}
               aria-invalid={!!errors.customerName}
               aria-describedby={errors.customerName ? 'customerName-error' : undefined}
             />
             {errors.customerName && (
-              <p id="customerName-error" className="text-red-600 text-xs mt-1">{errors.customerName}</p>
+              <p id="customerName-error" className="text-red-500 text-xs mt-1.5 font-medium">{errors.customerName}</p>
             )}
           </div>
           <div>
-            <label htmlFor="customerPhone" className="block text-sm font-medium mb-2">
+            <label htmlFor="customerPhone" className="block text-sm font-medium text-zinc-700 mb-1.5">
               Phone Number
             </label>
             <input
@@ -107,35 +113,47 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 setCustomerPhone(e.target.value);
                 handleCustomerChange();
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
             />
           </div>
           <div>
-            <label htmlFor="customerEmail" className="block text-sm font-medium mb-2">
+            <label htmlFor="customerEmail" className="block text-sm font-medium text-zinc-700 mb-1.5">
               Email
             </label>
             <input
               id="customerEmail"
               type="email"
-              placeholder="e.g., customer@example.com"
+              placeholder="e.g., rajesh@example.com"
               value={customerEmail}
               onChange={(e) => {
                 setCustomerEmail(e.target.value);
                 handleCustomerChange();
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
             />
           </div>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h2 className="text-lg font-semibold mb-4">Add Items</h2>
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-zinc-200">
+        <div className="border-b border-zinc-100 pb-4 mb-6 flex items-center justify-between">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            <h2 className="text-lg font-semibold text-zinc-900 tracking-tight">Add Line Items</h2>
+          </div>
+          <div className="bg-brand-50 px-3 py-1 rounded-full border border-brand-100 flex items-center">
+            <span className="w-2 h-2 rounded-full bg-brand-500 mr-2"></span>
+            <p className="text-xs text-brand-700 font-medium">GST Rate: {gstPercentage}%</p>
+          </div>
+        </div>
+        
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="itemSelect" className="block text-sm font-medium mb-2">
-                Select Item <span className="text-red-600">*</span>
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end">
+            <div className="flex-1 w-full">
+              <label htmlFor="itemSelect" className="block text-sm font-medium text-zinc-700 mb-1.5">
+                Select Item <span className="text-red-500">*</span>
               </label>
               <SearchableSelect
                 items={items}
@@ -144,9 +162,9 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               />
             </div>
 
-            <div>
-              <label htmlFor="quantity" className="block text-sm font-medium mb-2">
-                Quantity <span className="text-red-600">*</span>
+            <div className="w-full sm:w-32">
+              <label htmlFor="quantity" className="block text-sm font-medium text-zinc-700 mb-1.5">
+                Qty <span className="text-red-500">*</span>
               </label>
               <input
                 id="quantity"
@@ -158,42 +176,35 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
                   setQuantity(e.target.value);
                   setErrors((prev) => ({ ...prev, quantity: undefined }));
                 }}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.quantity ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 text-sm bg-white border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all duration-200 ${
+                  errors.quantity ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-zinc-200 focus:border-brand-500'
                 }`}
                 aria-invalid={!!errors.quantity}
                 aria-describedby={errors.quantity ? 'quantity-error' : undefined}
               />
-              {errors.quantity && (
-                <p id="quantity-error" className="text-red-600 text-xs mt-1">{errors.quantity}</p>
-              )}
             </div>
 
-            <div className="flex items-end">
-              <button
-                onClick={handleAddLineItem}
-                className="w-full px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors font-medium"
-              >
-                Add Item
-              </button>
-            </div>
+            <button
+              onClick={handleAddLineItem}
+              className="w-full sm:w-auto px-5 py-2 h-[38px] bg-zinc-900 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-zinc-800 transition-all duration-200 ease-out whitespace-nowrap"
+            >
+              Add Item
+            </button>
           </div>
 
+          {errors.quantity && (
+            <p id="quantity-error" className="text-red-500 text-xs font-medium mt-1">{errors.quantity}</p>
+          )}
+
           {selectedItemId && (
-            <div className="text-sm text-gray-600 p-3 bg-blue-50 rounded border border-blue-200">
-              <p>
-                <strong>Category:</strong>{' '}
+            <div className="mt-4 p-3 bg-zinc-50 rounded-lg border border-zinc-100 flex items-center text-sm animate-in fade-in duration-200">
+              <span className="text-zinc-500 mr-2">Category:</span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-200 text-zinc-800">
                 {items.find((i) => i.id === selectedItemId)?.category || 'N/A'}
-              </p>
+              </span>
             </div>
           )}
         </div>
-      </div>
-
-      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-        <p className="text-sm text-gray-700">
-          <strong>Current GST Rate:</strong> <span className="font-semibold">{gstPercentage}%</span>
-        </p>
       </div>
     </div>
   );

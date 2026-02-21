@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Invoice } from '../../types';
 import { useToast } from '../components/ToastProvider';
 import { formatDate, formatCurrency } from '../utils/invoiceUtils';
-import { exportToCSV, exportToPDF } from '../utils/reportExport';
+import { exportToCSV, exportToExcel, exportToPDF } from '../utils/reportExport';
 
 interface DailyRevenueRow {
   date: string;
@@ -37,6 +37,7 @@ export const ReportingPage: React.FC = () => {
   const [customerReport, setCustomerReport] = useState<CustomerSummaryRow[]>([]);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   useEffect(() => {
     loadInvoices();
@@ -70,7 +71,6 @@ export const ReportingPage: React.FC = () => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    // Validate date range
     if (start > end) {
       showToast('Start date cannot be after end date', 'error', 5000);
       setDailyReport([]);
@@ -162,10 +162,83 @@ export const ReportingPage: React.FC = () => {
     return { maxRevenue, chartHeight, padding };
   };
 
+  const renderExportDropdown = (
+    reportName: string,
+    reportTitle: string,
+    data: Array<Record<string, any>>,
+    headers: string[]
+  ) => {
+    return (
+      <div className="relative">
+        <button
+          onClick={() => setOpenDropdown(openDropdown === reportName ? null : reportName)}
+          className="bg-white border border-zinc-200 text-zinc-700 px-4 py-2 rounded-lg text-sm font-medium shadow-sm hover:bg-zinc-50 hover:text-zinc-900 transition-all duration-200 ease-out flex items-center"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-3 3m0 0l-3-3m3 3V4"></path>
+          </svg>
+          Export
+          <svg
+            className={`w-4 h-4 ml-2 transition-transform duration-200 ${openDropdown === reportName ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+          </svg>
+        </button>
+
+        {openDropdown === reportName && (
+          <div className="absolute right-0 mt-2 w-40 bg-white border border-zinc-200 rounded-lg shadow-lg z-10 overflow-hidden">
+            <button
+              onClick={() => {
+                exportToCSV(reportName, data, headers);
+                showToast(`${reportTitle} exported as CSV`, 'success', 4000);
+                setOpenDropdown(null);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 transition-colors duration-150 flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              CSV
+            </button>
+            <button
+              onClick={() => {
+                exportToExcel(reportName, data, headers);
+                showToast(`${reportTitle} exported as Excel`, 'success', 4000);
+                setOpenDropdown(null);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 transition-colors duration-150 border-t border-zinc-200 flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Excel
+            </button>
+            <button
+              onClick={() => {
+                exportToPDF(reportName, reportTitle, data, headers);
+                showToast(`${reportTitle} exported as PDF`, 'success', 4000);
+                setOpenDropdown(null);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 transition-colors duration-150 border-t border-zinc-200 flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              PDF
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderTrendChart = () => {
     if (trendData.length === 0) {
       return (
-        <div className="h-80 bg-gray-50 rounded flex items-center justify-center text-gray-500">
+        <div className="h-80 border border-zinc-200 border-dashed rounded-xl flex items-center justify-center text-zinc-400 text-sm">
           No data available for selected date range
         </div>
       );
@@ -177,10 +250,10 @@ export const ReportingPage: React.FC = () => {
     const barSpacing = (chartWidth - 2 * padding) / trendData.length;
 
     return (
-      <div className="overflow-x-auto p-4 bg-white rounded-lg">
+      <div className="overflow-x-auto bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
         <svg width={chartWidth} height={chartHeight + padding} className="mx-auto">
-          <line x1={padding} y1={padding} x2={padding} y2={chartHeight + padding} stroke="#ccc" />
-          <line x1={padding} y1={chartHeight + padding} x2={chartWidth - padding} y2={chartHeight + padding} stroke="#ccc" />
+          <line x1={padding} y1={padding} x2={padding} y2={chartHeight + padding} stroke="#e4e4e7" strokeWidth="1" />
+          <line x1={padding} y1={chartHeight + padding} x2={chartWidth - padding} y2={chartHeight + padding} stroke="#e4e4e7" strokeWidth="1" />
 
           {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
             const value = Math.round(maxRevenue * ratio);
@@ -190,14 +263,15 @@ export const ReportingPage: React.FC = () => {
                 <text
                   x={padding - 10}
                   y={y}
-                  fontSize="12"
-                  fill="#666"
+                  fontSize="11"
+                  fill="#71717a"
                   textAnchor="end"
                   dominantBaseline="middle"
+                  className="font-medium"
                 >
                   ₹{(value / 1000).toFixed(0)}k
                 </text>
-                <line x1={padding - 5} y1={y} x2={padding} y2={y} stroke="#ddd" />
+                <line x1={padding - 5} y1={y} x2={chartWidth - padding} y2={y} stroke="#f4f4f5" strokeWidth="1" strokeDasharray="4 4" />
               </g>
             );
           })}
@@ -218,36 +292,39 @@ export const ReportingPage: React.FC = () => {
                   y={y}
                   width={barWidth}
                   height={barHeight}
-                  fill={hoveredBar === index ? '#1e40af' : '#3b82f6'}
-                  style={{ cursor: 'pointer', transition: 'fill 0.2s' }}
+                  fill={hoveredBar === index ? '#2563eb' : '#3b82f6'}
+                  rx="4"
+                  ry="4"
+                  style={{ cursor: 'pointer', transition: 'all 0.2s ease-out' }}
                 />
                 <text
                   x={x + barWidth / 2}
-                  y={chartHeight + padding + 20}
+                  y={chartHeight + padding + 24}
                   fontSize="11"
-                  fill="#666"
+                  fill="#71717a"
                   textAnchor="middle"
-                  transform={`rotate(45, ${x + barWidth / 2}, ${chartHeight + padding + 20})`}
+                  className="font-medium"
+                  transform={`rotate(45, ${x + barWidth / 2}, ${chartHeight + padding + 24})`}
                 >
                   {item.date}
                 </text>
                 {hoveredBar === index && (
-                  <g>
+                  <g className="animate-in fade-in zoom-in-95 duration-150">
                     <rect
-                      x={x + barWidth / 2 - 35}
-                      y={y - 30}
-                      width="70"
-                      height="25"
-                      fill="#1f2937"
-                      rx="4"
+                      x={x + barWidth / 2 - 40}
+                      y={y - 35}
+                      width="80"
+                      height="28"
+                      fill="#18181b"
+                      rx="6"
                     />
                     <text
                       x={x + barWidth / 2}
-                      y={y - 10}
+                      y={y - 16}
                       fontSize="12"
                       fill="white"
                       textAnchor="middle"
-                      fontWeight="bold"
+                      fontWeight="600"
                     >
                       {formatCurrency(item.revenue)}
                     </text>
@@ -262,194 +339,181 @@ export const ReportingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2 text-gray-900">Reports & Analytics</h1>
-        <p className="text-gray-600 mb-8">Generate financial reports and analyze business trends</p>
+    <div className="p-6 md:p-8 animate-in fade-in duration-300">
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Reports & Analytics</h1>
+        <p className="text-sm md:text-base text-zinc-500 mt-1">Generate financial reports and analyze business trends</p>
+      </div>
 
-         <div className="bg-white p-6 rounded-lg shadow mb-8">
-          <h2 className="text-lg font-semibold mb-4">Date Range</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
-              <input
-                id="start-date"
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                aria-label="Select start date for report"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
-              <input
-                id="end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                aria-label="Select end date for report"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
+      <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-zinc-200 mb-8">
+        <div className="border-b border-zinc-100 pb-4 mb-6 flex items-center">
+          <svg className="w-5 h-5 mr-2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <h2 className="text-lg font-semibold text-zinc-900">Date Range</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-2xl">
+          <div>
+            <label htmlFor="start-date" className="block text-sm font-medium text-zinc-700 mb-1.5">Start Date</label>
+            <input
+              id="start-date"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              aria-label="Select start date for report"
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+            />
+          </div>
+          <div>
+            <label htmlFor="end-date" className="block text-sm font-medium text-zinc-700 mb-1.5">End Date</label>
+            <input
+              id="end-date"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              aria-label="Select end date for report"
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+            />
           </div>
         </div>
+      </div>
 
-        <div className="bg-white rounded-lg shadow mb-6">
-          <div className="flex border-b">
-            {[
-              { id: 'daily', label: 'Daily Revenue' },
-              { id: 'customer', label: 'Customer Summary' },
-              { id: 'trend', label: 'Revenue Trend' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                aria-label={`View ${tab.label} report`}
-                className={`flex-1 px-6 py-4 font-medium transition ${
-                  activeTab === tab.id
-                    ? 'border-b-2 border-blue-600 text-blue-600'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+      <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+        <div className="flex border-b border-zinc-200 bg-zinc-50/50 px-2 pt-2">
+          {[
+            { id: 'daily', label: 'Daily Revenue' },
+            { id: 'customer', label: 'Customer Summary' },
+            { id: 'trend', label: 'Revenue Trend' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              aria-label={`View ${tab.label} report`}
+              className={`px-5 py-3 text-sm font-medium transition-all duration-200 ease-out border-b-2 -mb-px ${
+                activeTab === tab.id
+                  ? 'border-brand-600 text-brand-600 bg-white rounded-t-lg shadow-sm'
+                  : 'border-transparent text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100/50 rounded-t-lg'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-          <div className="p-6">
-            {loading ? (
-              <div className="text-center py-8 text-gray-500">Loading...</div>
-            ) : (
-              <>
-                {activeTab === 'daily' && (
-                  <div>
-                    <div className="mb-4 flex gap-2">
-                      <button
-                        onClick={() => {
-                          const headers = ['date', 'dailyTotal', 'cumulativeTotal'];
-                          const data = dailyReport.map((row) => ({
-                            date: row.date,
-                            dailyTotal: formatCurrency(row.dailyTotal),
-                            cumulativeTotal: formatCurrency(row.cumulativeTotal),
-                          }));
-                          exportToCSV('daily-revenue-report', data, headers);
-                          showToast('Daily revenue report exported successfully', 'success', 4000);
-                        }}
-                        aria-label="Export daily revenue report as CSV"
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
-                      >
-                        Export CSV
-                      </button>
-                    </div>
-                    {dailyReport.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">No data for selected date range</div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b-2 border-gray-300 bg-gray-50">
-                              <th className="text-left py-3 px-4">Date</th>
-                              <th className="text-right py-3 px-4">Daily Total</th>
-                              <th className="text-right py-3 px-4">Cumulative Total</th>
+        <div className="p-6 bg-zinc-50/30">
+          {loading ? (
+            <div className="text-center py-12 text-zinc-500 flex flex-col items-center">
+              <svg className="animate-spin h-6 w-6 text-zinc-400 mb-3" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Loading report data...</span>
+            </div>
+          ) : (
+            <div className="animate-in fade-in duration-300">
+               {activeTab === 'daily' && (
+                 <div>
+                   <div className="mb-5 flex justify-end">
+                     {renderExportDropdown(
+                       'daily-revenue-report',
+                       'Daily Revenue Report',
+                       dailyReport.map((row) => ({
+                         date: row.date,
+                         dailyTotal: formatCurrency(row.dailyTotal),
+                         cumulativeTotal: formatCurrency(row.cumulativeTotal),
+                       })),
+                       ['date', 'dailyTotal', 'cumulativeTotal']
+                     )}
+                   </div>
+                  {dailyReport.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-500 border border-zinc-200 border-dashed rounded-xl bg-white">No data for selected date range</div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-zinc-50/50 border-b border-zinc-200">
+                            <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Daily Total</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Cumulative Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                          {dailyReport.map((row, idx) => (
+                            <tr key={idx} className="hover:bg-zinc-50/50 transition-colors duration-150 ease-in-out">
+                              <td className="px-6 py-4 text-sm text-zinc-900 font-medium">{row.date}</td>
+                              <td className="px-6 py-4 text-sm text-zinc-900 text-right font-semibold">{formatCurrency(row.dailyTotal)}</td>
+                              <td className="px-6 py-4 text-sm text-zinc-600 text-right">{formatCurrency(row.cumulativeTotal)}</td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {dailyReport.map((row, idx) => (
-                              <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                                <td className="py-3 px-4">{row.date}</td>
-                                <td className="text-right py-3 px-4 font-semibold">
-                                  {formatCurrency(row.dailyTotal)}
-                                </td>
-                                <td className="text-right py-3 px-4 font-semibold">
-                                  {formatCurrency(row.cumulativeTotal)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === 'customer' && (
-                  <div>
-                    <div className="mb-4 flex gap-2">
-                      <button
-                        onClick={() => {
-                          const headers = ['customerName', 'invoiceCount', 'totalRevenue', 'avgInvoiceValue'];
-                          const data = customerReport.map((row) => ({
-                            customerName: row.customerName,
-                            invoiceCount: row.invoiceCount.toString(),
-                            totalRevenue: formatCurrency(row.totalRevenue),
-                            avgInvoiceValue: formatCurrency(row.avgInvoiceValue),
-                          }));
-                          exportToCSV('customer-summary-report', data, headers);
-                          showToast('Customer summary report exported successfully', 'success', 4000);
-                        }}
-                        aria-label="Export customer summary report as CSV"
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
-                      >
-                        Export CSV
-                      </button>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                    {customerReport.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">No data for selected date range</div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b-2 border-gray-300 bg-gray-50">
-                              <th className="text-left py-3 px-4">Customer Name</th>
-                              <th className="text-right py-3 px-4">Invoice Count</th>
-                              <th className="text-right py-3 px-4">Total Revenue</th>
-                              <th className="text-right py-3 px-4">Avg Invoice Value</th>
+                  )}
+                </div>
+              )}
+
+               {activeTab === 'customer' && (
+                 <div>
+                   <div className="mb-5 flex justify-end">
+                     {renderExportDropdown(
+                       'customer-summary-report',
+                       'Customer Summary Report',
+                       customerReport.map((row) => ({
+                         customerName: row.customerName,
+                         invoiceCount: row.invoiceCount.toString(),
+                         totalRevenue: formatCurrency(row.totalRevenue),
+                         avgInvoiceValue: formatCurrency(row.avgInvoiceValue),
+                       })),
+                       ['customerName', 'invoiceCount', 'totalRevenue', 'avgInvoiceValue']
+                     )}
+                   </div>
+                  {customerReport.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-500 border border-zinc-200 border-dashed rounded-xl bg-white">No data for selected date range</div>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-zinc-50/50 border-b border-zinc-200">
+                            <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Customer Name</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Invoice Count</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Total Revenue</th>
+                            <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Avg Invoice Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                          {customerReport.map((row, idx) => (
+                            <tr key={idx} className="hover:bg-zinc-50/50 transition-colors duration-150 ease-in-out">
+                              <td className="px-6 py-4 text-sm text-zinc-900 font-medium">{row.customerName}</td>
+                              <td className="px-6 py-4 text-sm text-zinc-600 text-right">{row.invoiceCount}</td>
+                              <td className="px-6 py-4 text-sm text-zinc-900 text-right font-semibold">{formatCurrency(row.totalRevenue)}</td>
+                              <td className="px-6 py-4 text-sm text-zinc-600 text-right">{formatCurrency(row.avgInvoiceValue)}</td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {customerReport.map((row, idx) => (
-                              <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50">
-                                <td className="py-3 px-4 font-medium">{row.customerName}</td>
-                                <td className="text-right py-3 px-4">{row.invoiceCount}</td>
-                                <td className="text-right py-3 px-4 font-semibold">
-                                  {formatCurrency(row.totalRevenue)}
-                                </td>
-                                <td className="text-right py-3 px-4">{formatCurrency(row.avgInvoiceValue)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeTab === 'trend' && (
-                  <div>
-                    <div className="mb-4 flex gap-2">
-                      <button
-                        onClick={() => {
-                          const headers = ['date', 'revenue'];
-                          const data = trendData.map((row) => ({
-                            date: row.date,
-                            revenue: formatCurrency(row.revenue),
-                          }));
-                          exportToCSV('revenue-trend-report', data, headers);
-                          showToast('Revenue trend report exported successfully', 'success', 4000);
-                        }}
-                        aria-label="Export revenue trend report as CSV"
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
-                      >
-                        Export CSV
-                      </button>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
-                    {renderTrendChart()}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                  )}
+                </div>
+              )}
+
+               {activeTab === 'trend' && (
+                 <div>
+                   <div className="mb-5 flex justify-end">
+                     {renderExportDropdown(
+                       'revenue-trend-report',
+                       'Revenue Trend Report',
+                       trendData.map((row) => ({
+                         date: row.date,
+                         revenue: formatCurrency(row.revenue),
+                       })),
+                       ['date', 'revenue']
+                     )}
+                   </div>
+                  {renderTrendChart()}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

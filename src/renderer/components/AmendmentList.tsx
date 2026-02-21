@@ -10,7 +10,7 @@ interface AmendmentListProps {
 export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items, onViewAmendment }) => {
   if (amendments.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow text-center text-gray-500">
+      <div className="bg-white p-6 rounded-lg shadow text-center text-zinc-500">
         No amendments for this invoice.
       </div>
     );
@@ -29,7 +29,7 @@ export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items,
       <h2 className="text-lg font-semibold mb-4">Amendment History</h2>
       <table className="w-full border-collapse">
         <thead>
-          <tr className="border-b-2 border-gray-300 bg-gray-50">
+          <tr className="border-b-2 border-zinc-300 bg-zinc-50">
             <th className="text-left py-3 px-4">Amendment #</th>
             <th className="text-center py-3 px-4">Date</th>
             <th className="text-right py-3 px-4">Subtotal</th>
@@ -41,7 +41,7 @@ export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items,
         </thead>
         <tbody>
           {amendments.map((amendment) => (
-            <tr key={amendment.id} className="border-b border-gray-200 hover:bg-gray-50">
+            <tr key={amendment.id} className="border-b border-zinc-200 hover:bg-zinc-50">
               <td className="py-3 px-4 font-mono text-sm">{amendment.invoiceNumber}</td>
               <td className="text-center py-3 px-4 text-sm">{formatDate(amendment.invoiceDate)}</td>
               <td className="text-right py-3 px-4">{formatCurrency(amendment.grossAmount)}</td>
@@ -53,7 +53,7 @@ export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items,
                     amendment.status === 'Final'
                       ? 'bg-green-100 text-green-800'
                       : amendment.status === 'Draft'
-                        ? 'bg-blue-100 text-blue-800'
+                        ? 'bg-brand-100 text-brand-800'
                         : 'bg-red-100 text-red-800'
                   }`}
                 >
@@ -63,7 +63,7 @@ export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items,
               <td className="text-center py-3 px-4">
                <button
                    onClick={() => onViewAmendment(amendment)}
-                   className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded transition text-sm"
+                   className="px-3 py-1 text-brand-600 hover:bg-brand-50 rounded transition text-sm"
                    aria-label={`View amendment for invoice #${amendment.invoiceNumber}`}
                  >
                    View
@@ -75,7 +75,7 @@ export const AmendmentList: React.FC<AmendmentListProps> = ({ amendments, items,
       </table>
 
       {amendments.length > 0 && (
-        <div className="mt-4 p-4 bg-gray-50 rounded border border-gray-200 text-sm text-gray-600">
+        <div className="mt-4 p-4 bg-zinc-50 rounded border border-zinc-200 text-sm text-zinc-600">
           <p>
             <strong>Total Amendments:</strong> {amendments.length}
           </p>
