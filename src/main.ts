@@ -302,3 +302,198 @@ ipcMain.handle('save-invoice-pdf', async (_event, invoiceId: string) => {
     };
   }
 });
+
+// ===== AMENDMENT HANDLERS =====
+
+ipcMain.handle('create-amendment', async (_event, data) => {
+  try {
+    const {
+      originalInvoiceId,
+      customerName,
+      customerPhone,
+      customerEmail,
+      lineItems,
+      gstPercentage,
+      notes,
+    } = data;
+
+    const originalInvoice = await prisma.invoice.findUnique({
+      where: { id: originalInvoiceId },
+    });
+
+    if (!originalInvoice) {
+      return { success: false, error: 'Original invoice not found' };
+    }
+
+    // Create amendment invoice with sequential numbering
+    const amendmentNumber = await prisma.invoice.count({
+      where: { originalInvoiceId },
+    });
+
+    const amendmentInvoiceNumber = `${originalInvoice.invoiceNumber}-A${amendmentNumber + 1}`;
+
+    const grossAmount = lineItems.reduce((sum: number, line: any) => sum + line.lineTotal, 0);
+    const gstAmount = Number((grossAmount * (gstPercentage / 100)).toFixed(2));
+    const netTotal = Number((grossAmount + gstAmount).toFixed(2));
+
+    const amendment = await prisma.invoice.create({
+      data: {
+        invoiceNumber: amendmentInvoiceNumber,
+        invoiceDate: new Date(),
+        customerName: customerName || originalInvoice.customerName,
+        customerPhone: customerPhone || originalInvoice.customerPhone,
+        customerEmail: customerEmail || originalInvoice.customerEmail,
+        grossAmount,
+        gstAmount,
+        netTotal,
+        gstPercentage,
+        status: 'Final',
+        isAmendment: true,
+        originalInvoiceId,
+        notes,
+        lineItems: {
+          create: lineItems.map((line: any) => ({
+            itemId: line.itemId,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            lineTotal: line.lineTotal,
+          })),
+        },
+      },
+      include: { lineItems: true },
+    });
+
+    return { success: true, data: amendment };
+  } catch (error) {
+    console.error('Error creating amendment:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+ipcMain.handle('list-amendments-for-invoice', async (_event, invoiceId: string) => {
+  try {
+    const amendments = await prisma.invoice.findMany({
+      where: { originalInvoiceId: invoiceId },
+      include: { lineItems: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return { success: true, data: amendments };
+  } catch (error) {
+    console.error('Error fetching amendments:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+// ===== BACKUP HANDLERS =====
+
+ipcMain.handle('create-backup', async () => {
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupFileName = `workshop-backup-${timestamp}.db`;
+    const backupPath = path.join(app.getPath('documents'), 'Workshop Backups', backupFileName);
+
+    // Ensure backup directory exists
+    const backupDir = path.dirname(backupPath);
+    await fs.promises.mkdir(backupDir, { recursive: true });
+
+    // Copy database file
+    const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db');
+    await fs.promises.copyFile(dbPath, backupPath);
+
+    return { success: true, data: { backupPath, fileName: backupFileName, timestamp } };
+  } catch (error) {
+    console.error('Error creating backup:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+ipcMain.handle('list-backups', async () => {
+  try {
+    const backupDir = path.join(app.getPath('documents'), 'Workshop Backups');
+
+    try {
+      const files = await fs.promises.readdir(backupDir);
+      const backups = await Promise.all(
+        files
+          .filter((f) => f.endsWith('.db'))
+          .map(async (file) => {
+            const filePath = path.join(backupDir, file);
+            const stats = await fs.promises.stat(filePath);
+            return {
+              fileName: file,
+              filePath,
+              size: stats.size,
+              createdAt: stats.birthtime,
+            };
+          })
+      );
+
+      return { success: true, data: backups.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()) };
+    } catch (err) {
+      // Directory doesn't exist yet
+      return { success: true, data: [] };
+    }
+  } catch (error) {
+    console.error('Error listing backups:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+ipcMain.handle('restore-backup', async (_event, backupPath: string) => {
+  try {
+    const dbPath = path.join(app.getPath('userData'), 'prisma', 'dev.db');
+
+    // Close Prisma connection before restoring
+    await prisma.$disconnect();
+
+    // Create backup of current DB before restoring
+    const currentBackupPath = path.join(
+      app.getPath('documents'),
+      'Workshop Backups',
+      `pre-restore-backup-${Date.now()}.db`
+    );
+    await fs.promises.mkdir(path.dirname(currentBackupPath), { recursive: true });
+    await fs.promises.copyFile(dbPath, currentBackupPath);
+
+    // Restore from backup
+    await fs.promises.copyFile(backupPath, dbPath);
+
+    // Reinitialize Prisma connection
+    const newPrisma = new PrismaClient();
+    Object.assign(prisma, newPrisma);
+
+    return { success: true, data: { message: 'Backup restored successfully', backupPath: currentBackupPath } };
+  } catch (error) {
+    console.error('Error restoring backup:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+ipcMain.handle('delete-backup', async (_event, backupPath: string) => {
+  try {
+    await fs.promises.unlink(backupPath);
+    return { success: true, data: { message: 'Backup deleted successfully' } };
+  } catch (error) {
+    console.error('Error deleting backup:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
