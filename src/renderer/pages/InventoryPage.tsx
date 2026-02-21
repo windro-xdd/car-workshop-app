@@ -3,11 +3,13 @@ import { ItemForm } from '../components/ItemForm';
 import { ItemTable } from '../components/ItemTable';
 import { useItemStore } from '../store/itemStore';
 import { useUserStore } from '../store/userStore';
+import { useToast } from '../components/ToastProvider';
 import { Item, CreateItemInput } from '../../types';
 
 export const InventoryPage: React.FC = () => {
   const { items, loading, error, setItems, setLoading, setError } = useItemStore();
   const { currentUser } = useUserStore();
+  const { showToast } = useToast();
   const canManageInventory = currentUser?.role === 'admin' || currentUser?.role === 'manager';
 
   useEffect(() => {
@@ -39,12 +41,14 @@ export const InventoryPage: React.FC = () => {
         const item = result.data as Item;
         setItems([...(items || []), item]);
         setError(null);
-        alert('Item added successfully');
+        showToast('Item added successfully', 'success', 4000);
       } else {
         setError(result.error || 'Failed to add item');
+        showToast(result.error || 'Failed to add item', 'error', 5000);
       }
     } catch (err) {
       setError('Error adding item');
+      showToast('Error adding item', 'error', 5000);
       console.error(err);
     } finally {
       setLoading(false);
@@ -58,12 +62,14 @@ export const InventoryPage: React.FC = () => {
       if (result.success) {
         setItems((items || []).filter((item) => item.id !== id));
         setError(null);
-        alert('Item deleted successfully');
+        showToast('Item deleted successfully', 'success', 4000);
       } else {
         setError(result.error || 'Failed to delete item');
+        showToast(result.error || 'Failed to delete item', 'error', 5000);
       }
     } catch (err) {
       setError('Error deleting item');
+      showToast('Error deleting item', 'error', 5000);
       console.error(err);
     } finally {
       setLoading(false);
@@ -71,7 +77,7 @@ export const InventoryPage: React.FC = () => {
   };
 
   const handleEditItem = (item: Item) => {
-    alert(`Edit feature coming soon for: ${item.name}`);
+    showToast(`Edit feature coming soon for: ${item.name}`, 'info', 4000);
   };
 
   return (

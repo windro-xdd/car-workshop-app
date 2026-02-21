@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Item } from '../../types';
+import { useModal } from './ModalProvider';
 
 interface ItemTableProps {
   items: Item[];
@@ -16,6 +17,22 @@ export const ItemTable: React.FC<ItemTableProps> = ({
   isLoading = false,
   canDelete = true,
 }) => {
+  const { openModal } = useModal();
+
+  const handleDeleteClick = async (item: Item) => {
+    const confirmed = await openModal(
+      'Delete Item',
+      `Are you sure you want to delete "${item.name}"? This action cannot be undone.`,
+      {
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        isDangerous: true,
+      }
+    );
+    if (confirmed) {
+      onDelete(item.id);
+    }
+  };
   if (isLoading) {
     return <div className="text-center py-8 text-gray-500">Loading items...</div>;
   }
@@ -59,28 +76,24 @@ export const ItemTable: React.FC<ItemTableProps> = ({
                 ₹{item.unitPrice.toFixed(2)}
               </td>
               <td className="px-6 py-3 text-center">
-               <button
-                   onClick={() => onEdit(item)}
-                   className="mr-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                 >
-                   Edit
-                 </button>
-                 {canDelete && (
-                   <button
-                     onClick={() => {
-                       if (
-                         window.confirm(
-                           `Are you sure you want to delete "${item.name}"?`,
-                         )
-                       ) {
-                         onDelete(item.id);
-                       }
-                     }}
-                     className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                   >
-                     Delete
-                   </button>
-                 )}
+                <button
+                  onClick={() => onEdit(item)}
+                  disabled
+                  title="Edit feature coming soon"
+                  className="mr-2 px-3 py-1 text-sm bg-gray-100 text-gray-500 rounded opacity-50 cursor-not-allowed"
+                  aria-label={`Edit ${item.name} (feature coming soon)`}
+                >
+                  Edit
+                </button>
+                {canDelete && (
+                  <button
+                    onClick={() => handleDeleteClick(item)}
+                    className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                    aria-label={`Delete ${item.name}`}
+                  >
+                    Delete
+                  </button>
+                )}
               </td>
             </tr>
           ))}
