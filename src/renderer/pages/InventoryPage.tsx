@@ -16,7 +16,7 @@ export const InventoryPage: React.FC = () => {
     try {
       const result = await window.electronAPI.getItems();
       if (result.success) {
-        setItems(result.data);
+        setItems(result.data || []);
       } else {
         setError(result.error || 'Failed to load items');
       }
@@ -33,7 +33,8 @@ export const InventoryPage: React.FC = () => {
     try {
       const result = await window.electronAPI.createItem(data);
       if (result.success) {
-        setItems([...items, result.data]);
+        const item = result.data as Item;
+        setItems([...(items || []), item]);
         setError(null);
         alert('Item added successfully');
       } else {
@@ -52,7 +53,7 @@ export const InventoryPage: React.FC = () => {
     try {
       const result = await window.electronAPI.deleteItem(id);
       if (result.success) {
-        setItems(items.filter((item) => item.id !== id));
+        setItems((items || []).filter((item) => item.id !== id));
         setError(null);
         alert('Item deleted successfully');
       } else {
@@ -84,7 +85,7 @@ export const InventoryPage: React.FC = () => {
 
         <ItemForm onSubmit={handleAddItem} isLoading={loading} />
         <ItemTable
-          items={items}
+          items={items || []}
           onEdit={handleEditItem}
           onDelete={handleDeleteItem}
           isLoading={loading}

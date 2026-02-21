@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { Item, CreateItemInput, UpdateItemInput } from './types';
+import { Item, CreateItemInput, UpdateItemInput, Invoice, GstConfig } from './types';
 
 interface IpcResponse<T> {
   success: boolean;
@@ -19,6 +19,21 @@ const electronAPI = {
 
   deleteItem: (id: string) =>
     ipcRenderer.invoke('delete-item', id) as Promise<IpcResponse<void>>,
+
+  getInvoices: () =>
+    ipcRenderer.invoke('get-invoices') as Promise<IpcResponse<Invoice[]>>,
+
+  createInvoice: (data: any) =>
+    ipcRenderer.invoke('create-invoice', data) as Promise<IpcResponse<Invoice>>,
+
+  deleteInvoice: (id: string) =>
+    ipcRenderer.invoke('delete-invoice', id) as Promise<IpcResponse<void>>,
+
+  getGstConfig: () =>
+    ipcRenderer.invoke('get-gst-config') as Promise<IpcResponse<GstConfig>>,
+
+  updateGstConfig: (data: GstConfig) =>
+    ipcRenderer.invoke('update-gst-config', data) as Promise<IpcResponse<GstConfig>>,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
