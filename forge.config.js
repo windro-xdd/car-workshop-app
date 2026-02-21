@@ -29,6 +29,7 @@ module.exports = {
     extraResource: [
       './prisma/data/workshop.db',
       './public',
+      './assets',
     ],
     afterCopy: [copyPrismaModules],
   },
