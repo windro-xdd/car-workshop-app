@@ -25,12 +25,16 @@ module.exports = {
     asar: {
       unpack: '**/*.node',
     },
+    icon: './assets/kripa-logo',
     extraResource: [
       './prisma/data/workshop.db',
+      './public',
     ],
     afterCopy: [copyPrismaModules],
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+    enabled: false,
+  },
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
@@ -50,15 +54,18 @@ module.exports = {
     },
   ],
   plugins: [
-    {
-      name: '@electron-forge/plugin-auto-unpack-natives',
-      config: {},
-    },
+    // {
+    //   name: '@electron-forge/plugin-auto-unpack-natives',
+    //   config: {},
+    // },
     {
       name: '@electron-forge/plugin-webpack',
       config: {
         devServer: {
           port: 3001,
+          static: {
+            directory: path.join(__dirname, 'public'),
+          },
         },
         mainConfig: './webpack.main.config.js',
         renderer: {

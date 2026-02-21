@@ -33,6 +33,7 @@ model Item {
   name      String
   category  String
   unitPrice Float
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

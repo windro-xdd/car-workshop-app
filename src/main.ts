@@ -53,10 +53,13 @@ if (require('electron-squirrel-startup')) {
 let mainWindow: BrowserWindow | null = null;
 
 const createWindow = () => {
+  const iconPath = path.join(app.getAppPath(), 'assets', 'kripa-logo.ico');
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     autoHideMenuBar: true,
+    icon: iconPath,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       contextIsolation: true,
@@ -112,6 +115,7 @@ ipcMain.handle('create-item', async (_event, data) => {
         name: data.name,
         category: data.category,
         unitPrice: data.unitPrice,
+        isActive: data.isActive ?? true,
       },
     });
     return { success: true, data: item };
@@ -133,6 +137,7 @@ ipcMain.handle('update-item', async (_event, data) => {
         name: data.name,
         category: data.category,
         unitPrice: data.unitPrice,
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
     });
     return { success: true, data: item };
@@ -147,20 +152,10 @@ ipcMain.handle('update-item', async (_event, data) => {
 
 ipcMain.handle('delete-item', async (_event, id: string) => {
   try {
-    // Check if item is referenced by any invoice line items
-    const usageCount = await prisma.lineItem.count({
-      where: { itemId: id },
-    });
-
-    if (usageCount > 0) {
-      return {
-        success: false,
-        error: `Cannot delete this item because it is used in ${usageCount} invoice line item${usageCount > 1 ? 's' : ''}. Remove it from all invoices first.`,
-      };
-    }
-
-    await prisma.item.delete({
+    // Instead of deleting, mark as inactive to avoid foreign key constraint issues
+    await prisma.item.update({
       where: { id },
+      data: { isActive: false },
     });
     return { success: true };
   } catch (error) {
@@ -423,18 +418,22 @@ ipcMain.handle('print-invoice-pdf', async (_event, invoiceId: string) => {
     if (filePath) {
       await savePDFToFile(pdfBuffer, filePath);
 
-      const { execFile } = require('child_process');
-      const printCommand = process.platform === 'win32' ? 'powershell.exe' : 'lp';
-      
-      if (process.platform === 'win32') {
-        execFile(printCommand, [
-          '-Command',
-          `Start-Process -FilePath "${filePath}" -Verb Print -WindowStyle Hidden`,
-        ]);
-      } else {
-        execFile(printCommand, [filePath]);
-      }
+      // Create a hidden window to print the PDF
+      const printWindow = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+        },
+      });
 
+      printWindow.webContents.on('did-finish-load', () => {
+        printWindow.webContents.print({}, (success, failureReason) => {
+          if (!success) console.log('Print failed: ', failureReason);
+          printWindow.destroy();
+        });
+      });
+
+      printWindow.webContents.loadFile(filePath);
       return { success: true, data: { filePath, fileName: path.basename(filePath) } };
     } else {
       return { success: false, error: 'Save cancelled' };

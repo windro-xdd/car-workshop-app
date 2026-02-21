@@ -252,6 +252,7 @@ export const InvoicePage: React.FC = () => {
          {selectedInvoiceForPDF && (
            <InvoicePDFPreview
              invoice={selectedInvoiceForPDF}
+             items={items || []}
              onClose={() => setSelectedInvoiceForPDF(null)}
            />
          )}

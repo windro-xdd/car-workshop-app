@@ -205,7 +205,7 @@ export const InventoryPage: React.FC = () => {
           </>
         )}
         <ItemTable
-          items={items || []}
+          items={(items || []).filter(item => item.isActive)}
           onEdit={handleEditItem}
           onDelete={handleDeleteItem}
           isLoading={loading}
