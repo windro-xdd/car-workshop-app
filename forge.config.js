@@ -1,13 +1,34 @@
+const path = require('path');
+const fs = require('fs-extra');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
-const ForgeExternalsPlugin = require('@timfish/forge-externals-plugin');
+
+function copyPrismaModules(buildPath, _electronVersion, _platform, _arch, callback) {
+  const srcNodeModules = path.resolve(__dirname, 'node_modules');
+  const destNodeModules = path.join(buildPath, 'node_modules');
+
+  const modulesToCopy = ['@prisma/client', '.prisma/client'];
+
+  Promise.all(
+    modulesToCopy.map((mod) => {
+      const src = path.join(srcNodeModules, mod);
+      const dest = path.join(destNodeModules, mod);
+      return fs.copy(src, dest);
+    })
+  )
+    .then(() => callback())
+    .catch((err) => callback(err));
+}
 
 module.exports = {
   packagerConfig: {
-    asar: true,
+    asar: {
+      unpack: '**/*.node',
+    },
     extraResource: [
       './prisma/data/workshop.db',
     ],
+    afterCopy: [copyPrismaModules],
   },
   rebuildConfig: {},
   makers: [
@@ -33,10 +54,6 @@ module.exports = {
       name: '@electron-forge/plugin-auto-unpack-natives',
       config: {},
     },
-    new ForgeExternalsPlugin({
-      externals: ['@prisma/client', '.prisma/client'],
-      includeDeps: true,
-    }),
     {
       name: '@electron-forge/plugin-webpack',
       config: {
