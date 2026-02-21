@@ -25,6 +25,7 @@ module.exports = {
     asar: {
       unpack: '**/*.node',
     },
+    icon: './assets/kripa-logo',
     extraResource: [
       './prisma/data/workshop.db',
       './public',
@@ -62,6 +63,9 @@ module.exports = {
       config: {
         devServer: {
           port: 3001,
+          static: {
+            directory: path.join(__dirname, 'public'),
+          },
         },
         mainConfig: './webpack.main.config.js',
         renderer: {
