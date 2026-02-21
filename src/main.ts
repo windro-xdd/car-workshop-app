@@ -38,6 +38,113 @@ function ensureDatabase(): void {
 
 ensureDatabase();
 
+// Runtime database migrations for packaged app
+// Prisma migrations don't run in production, so we apply schema changes manually
+function migrateDatabase(): void {
+  const dbPath = getDbPath();
+  if (!fs.existsSync(dbPath)) return;
+
+  try {
+    // Use better-sqlite3 directly to check and apply schema changes
+    const Database = require('better-sqlite3');
+    const db = new Database(dbPath);
+
+    // Check if 'isActive' column exists on 'items' table
+    const itemColumns = db.pragma('table_info(items)') as { name: string }[];
+    const hasIsActive = itemColumns.some((col: { name: string }) => col.name === 'isActive');
+
+    if (!hasIsActive) {
+      console.log('Migrating database: adding isActive column to items table');
+      db.exec(`
+        PRAGMA foreign_keys=OFF;
+        CREATE TABLE "new_items" (
+            "id" TEXT NOT NULL PRIMARY KEY,
+            "code" TEXT NOT NULL,
+            "name" TEXT NOT NULL,
+            "category" TEXT NOT NULL,
+            "unitPrice" REAL NOT NULL,
+            "isActive" BOOLEAN NOT NULL DEFAULT true,
+            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" DATETIME NOT NULL
+        );
+        INSERT INTO "new_items" ("category", "code", "createdAt", "id", "name", "unitPrice", "updatedAt")
+          SELECT "category", "code", "createdAt", "id", "name", "unitPrice", "updatedAt" FROM "items";
+        DROP TABLE "items";
+        ALTER TABLE "new_items" RENAME TO "items";
+        CREATE UNIQUE INDEX "items_code_key" ON "items"("code");
+        PRAGMA foreign_key_check;
+        PRAGMA foreign_keys=ON;
+      `);
+      console.log('Migration complete: isActive column added to items table');
+    }
+
+    // Check if 'users' table exists
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").all();
+    if (tables.length === 0) {
+      console.log('Migrating database: creating users table');
+      db.exec(`
+        CREATE TABLE "users" (
+            "id" TEXT NOT NULL PRIMARY KEY,
+            "email" TEXT NOT NULL,
+            "password" TEXT NOT NULL,
+            "name" TEXT NOT NULL,
+            "role" TEXT NOT NULL DEFAULT 'staff',
+            "isActive" BOOLEAN NOT NULL DEFAULT true,
+            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" DATETIME NOT NULL
+        );
+        CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+      `);
+      console.log('Migration complete: users table created');
+    }
+
+    // Check if 'userId' column exists on 'invoices' table
+    const invoiceColumns = db.pragma('table_info(invoices)') as { name: string }[];
+    const hasUserId = invoiceColumns.some((col: { name: string }) => col.name === 'userId');
+
+    if (!hasUserId) {
+      console.log('Migrating database: adding userId column to invoices table');
+      db.exec(`
+        PRAGMA foreign_keys=OFF;
+        CREATE TABLE "new_invoices" (
+            "id" TEXT NOT NULL PRIMARY KEY,
+            "invoiceNumber" TEXT NOT NULL,
+            "invoiceDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "customerName" TEXT NOT NULL,
+            "customerPhone" TEXT,
+            "customerEmail" TEXT,
+            "grossAmount" REAL NOT NULL DEFAULT 0,
+            "gstAmount" REAL NOT NULL DEFAULT 0,
+            "netTotal" REAL NOT NULL DEFAULT 0,
+            "gstPercentage" REAL NOT NULL DEFAULT 18.0,
+            "status" TEXT NOT NULL DEFAULT 'Draft',
+            "isAmendment" BOOLEAN NOT NULL DEFAULT false,
+            "originalInvoiceId" TEXT,
+            "notes" TEXT,
+            "userId" TEXT NOT NULL DEFAULT '',
+            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" DATETIME NOT NULL,
+            CONSTRAINT "invoices_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+        );
+        INSERT INTO "new_invoices" ("createdAt", "customerEmail", "customerName", "customerPhone", "grossAmount", "gstAmount", "gstPercentage", "id", "invoiceDate", "invoiceNumber", "isAmendment", "netTotal", "notes", "originalInvoiceId", "status", "updatedAt")
+          SELECT "createdAt", "customerEmail", "customerName", "customerPhone", "grossAmount", "gstAmount", "gstPercentage", "id", "invoiceDate", "invoiceNumber", "isAmendment", "netTotal", "notes", "originalInvoiceId", "status", "updatedAt" FROM "invoices";
+        DROP TABLE "invoices";
+        ALTER TABLE "new_invoices" RENAME TO "invoices";
+        CREATE UNIQUE INDEX "invoices_invoiceNumber_key" ON "invoices"("invoiceNumber");
+        PRAGMA foreign_key_check;
+        PRAGMA foreign_keys=ON;
+      `);
+      console.log('Migration complete: userId column added to invoices table');
+    }
+
+    db.close();
+  } catch (error) {
+    console.error('Database migration error:', error);
+  }
+}
+
+migrateDatabase();
+
 const prisma = new PrismaClient({
   datasources: {
     db: {

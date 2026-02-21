@@ -43,5 +43,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            out/make/squirrel.windows/**/*.exe
-            out/make/squirrel.windows/**/*.nupkg
+            out/make/squirrel.windows/**/*Setup*.exe
