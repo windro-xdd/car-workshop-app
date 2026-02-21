@@ -139,40 +139,41 @@ ipcMain.handle('get-invoices', async () => {
 });
 
 ipcMain.handle('create-invoice', async (_event, data) => {
-  try {
-    const invoice = await prisma.invoice.create({
-      data: {
-        invoiceNumber: data.invoiceNumber,
-        invoiceDate: new Date(data.invoiceDate),
-        customerName: data.customerName,
-        customerPhone: data.customerPhone,
-        customerEmail: data.customerEmail,
-        grossAmount: data.grossAmount,
-        gstAmount: data.gstAmount,
-        netTotal: data.netTotal,
-        gstPercentage: data.gstPercentage,
-        status: data.status || 'Final',
-        isAmendment: data.isAmendment || false,
-        lineItems: {
-          create: data.lineItems.map((line: any) => ({
-            itemId: line.itemId,
-            quantity: line.quantity,
-            unitPrice: line.unitPrice,
-            lineTotal: line.quantity * line.unitPrice,
-          })),
-        },
-      },
-      include: { lineItems: true },
-    });
-    return { success: true, data: invoice };
-  } catch (error) {
-    console.error('Error creating invoice:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-});
+   try {
+     const invoice = await prisma.invoice.create({
+       data: {
+         invoiceNumber: data.invoiceNumber,
+         invoiceDate: new Date(data.invoiceDate),
+         customerName: data.customerName,
+         customerPhone: data.customerPhone,
+         customerEmail: data.customerEmail,
+         grossAmount: data.grossAmount,
+         gstAmount: data.gstAmount,
+         netTotal: data.netTotal,
+         gstPercentage: data.gstPercentage,
+         status: data.status || 'Final',
+         isAmendment: data.isAmendment || false,
+         userId: data.userId,
+         lineItems: {
+           create: data.lineItems.map((line: any) => ({
+             itemId: line.itemId,
+             quantity: line.quantity,
+             unitPrice: line.unitPrice,
+             lineTotal: line.quantity * line.unitPrice,
+           })),
+         },
+       },
+       include: { lineItems: true },
+     });
+     return { success: true, data: invoice };
+   } catch (error) {
+     console.error('Error creating invoice:', error);
+     return {
+       success: false,
+       error: error instanceof Error ? error.message : 'Unknown error',
+     };
+   }
+ });
 
 ipcMain.handle('delete-invoice', async (_event, id: string) => {
   try {
@@ -336,32 +337,33 @@ ipcMain.handle('create-amendment', async (_event, data) => {
     const gstAmount = Number((grossAmount * (gstPercentage / 100)).toFixed(2));
     const netTotal = Number((grossAmount + gstAmount).toFixed(2));
 
-    const amendment = await prisma.invoice.create({
-      data: {
-        invoiceNumber: amendmentInvoiceNumber,
-        invoiceDate: new Date(),
-        customerName: customerName || originalInvoice.customerName,
-        customerPhone: customerPhone || originalInvoice.customerPhone,
-        customerEmail: customerEmail || originalInvoice.customerEmail,
-        grossAmount,
-        gstAmount,
-        netTotal,
-        gstPercentage,
-        status: 'Final',
-        isAmendment: true,
-        originalInvoiceId,
-        notes,
-        lineItems: {
-          create: lineItems.map((line: any) => ({
-            itemId: line.itemId,
-            quantity: line.quantity,
-            unitPrice: line.unitPrice,
-            lineTotal: line.lineTotal,
-          })),
-        },
-      },
-      include: { lineItems: true },
-    });
+     const amendment = await prisma.invoice.create({
+       data: {
+         invoiceNumber: amendmentInvoiceNumber,
+         invoiceDate: new Date(),
+         customerName: customerName || originalInvoice.customerName,
+         customerPhone: customerPhone || originalInvoice.customerPhone,
+         customerEmail: customerEmail || originalInvoice.customerEmail,
+         grossAmount,
+         gstAmount,
+         netTotal,
+         gstPercentage,
+         status: 'Final',
+         isAmendment: true,
+         originalInvoiceId,
+         notes,
+         userId: data.userId,
+         lineItems: {
+           create: lineItems.map((line: any) => ({
+             itemId: line.itemId,
+             quantity: line.quantity,
+             unitPrice: line.unitPrice,
+             lineTotal: line.lineTotal,
+           })),
+         },
+       },
+       include: { lineItems: true },
+     });
 
     return { success: true, data: amendment };
   } catch (error) {
@@ -491,6 +493,119 @@ ipcMain.handle('delete-backup', async (_event, backupPath: string) => {
     return { success: true, data: { message: 'Backup deleted successfully' } };
   } catch (error) {
     console.error('Error deleting backup:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+const bcrypt = require('bcrypt');
+
+ipcMain.handle('register-user', async (_event, input: any) => {
+  try {
+    const { email, password, name, role } = input;
+
+    if (!email || !password || !name) {
+      return { success: false, error: 'Email, password, and name are required' };
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return { success: false, error: 'Email already registered' };
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role: role || 'staff',
+      },
+    });
+
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    };
+  } catch (error) {
+    console.error('Error registering user:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+ipcMain.handle('login-user', async (_event, input: any) => {
+  try {
+    const { email, password } = input;
+
+    if (!email || !password) {
+      return { success: false, error: 'Email and password are required' };
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return { success: false, error: 'Invalid credentials' };
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return { success: false, error: 'Invalid credentials' };
+    }
+
+    if (!user.isActive) {
+      return { success: false, error: 'User account is inactive' };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      },
+    };
+  } catch (error) {
+    console.error('Error logging in user:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
+ipcMain.handle('get-users', async () => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return { success: true, data: users };
+  } catch (error) {
+    console.error('Error fetching users:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

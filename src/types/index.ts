@@ -1,3 +1,25 @@
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'manager' | 'staff';
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  name: string;
+  role?: 'admin' | 'manager' | 'staff';
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
 export interface Item {
   id: string;
   code: string;
@@ -38,6 +60,7 @@ export interface Invoice {
   isAmendment: boolean;
   originalInvoiceId?: string;
   notes?: string;
+  userId: string;
   lineItems?: LineItem[];
   createdAt: Date;
   updatedAt: Date;

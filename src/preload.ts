@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { Item, CreateItemInput, UpdateItemInput, Invoice, GstConfig } from './types';
+import { Item, CreateItemInput, UpdateItemInput, Invoice, GstConfig, User, LoginInput, CreateUserInput } from './types';
 
 interface IpcResponse<T> {
   success: boolean;
@@ -66,6 +66,15 @@ const electronAPI = {
 
   deleteBackup: (backupPath: string) =>
     ipcRenderer.invoke('delete-backup', backupPath) as Promise<IpcResponse<{ message: string }>>,
+
+  registerUser: (data: CreateUserInput) =>
+    ipcRenderer.invoke('register-user', data) as Promise<IpcResponse<User>>,
+
+  loginUser: (data: LoginInput) =>
+    ipcRenderer.invoke('login-user', data) as Promise<IpcResponse<User>>,
+
+  getUsers: () =>
+    ipcRenderer.invoke('get-users') as Promise<IpcResponse<User[]>>,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

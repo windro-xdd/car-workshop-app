@@ -6,25 +6,27 @@ import { InvoicePDFPreview } from '../components/InvoicePDFPreview';
 import { AmendmentForm } from '../components/AmendmentForm';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { useItemStore } from '../store/itemStore';
+import { useUserStore } from '../store/userStore';
 import { Invoice, LineItem } from '../../types';
 import { generateInvoiceNumber } from '../utils/invoiceUtils';
 
 export const InvoicePage: React.FC = () => {
-  const {
-    invoices,
-    lineItems,
-    gstPercentage,
-    loading,
-    error,
-    setInvoices,
-    setLineItems,
-    addLineItem,
-    removeLineItem,
-    setLoading,
-    setError,
-  } = useInvoiceStore();
+   const {
+     invoices,
+     lineItems,
+     gstPercentage,
+     loading,
+     error,
+     setInvoices,
+     setLineItems,
+     addLineItem,
+     removeLineItem,
+     setLoading,
+     setError,
+   } = useInvoiceStore();
 
-  const { items, setItems } = useItemStore();
+   const { items, setItems } = useItemStore();
+   const { currentUser } = useUserStore();
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -98,21 +100,22 @@ export const InvoicePage: React.FC = () => {
       const netTotal = Number((grossAmount + gstAmount).toFixed(2));
 
       const newInvoice: Invoice = {
-        id: `inv_${Date.now()}`,
-        invoiceNumber,
-        invoiceDate: new Date(),
-        customerName,
-        customerPhone,
-        customerEmail,
-        grossAmount,
-        gstAmount,
-        netTotal,
-        gstPercentage,
-        status: 'Final',
-        isAmendment: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+         id: `inv_${Date.now()}`,
+         invoiceNumber,
+         invoiceDate: new Date(),
+         customerName,
+         customerPhone,
+         customerEmail,
+         grossAmount,
+         gstAmount,
+         netTotal,
+         gstPercentage,
+         status: 'Final',
+         isAmendment: false,
+         userId: currentUser!.id,
+         createdAt: new Date(),
+         updatedAt: new Date(),
+       };
 
       const result = await window.electronAPI.createInvoice({
         ...newInvoice,

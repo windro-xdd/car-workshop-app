@@ -1,11 +1,12 @@
 import React from 'react';
-import { Item } from '@/types';
+import { Item } from '../../types';
 
 interface ItemTableProps {
   items: Item[];
   onEdit: (item: Item) => void;
   onDelete: (id: string) => void;
   isLoading?: boolean;
+  canDelete?: boolean;
 }
 
 export const ItemTable: React.FC<ItemTableProps> = ({
@@ -13,6 +14,7 @@ export const ItemTable: React.FC<ItemTableProps> = ({
   onEdit,
   onDelete,
   isLoading = false,
+  canDelete = true,
 }) => {
   if (isLoading) {
     return <div className="text-center py-8 text-gray-500">Loading items...</div>;
@@ -57,26 +59,28 @@ export const ItemTable: React.FC<ItemTableProps> = ({
                 ₹{item.unitPrice.toFixed(2)}
               </td>
               <td className="px-6 py-3 text-center">
-                <button
-                  onClick={() => onEdit(item)}
-                  className="mr-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        `Are you sure you want to delete "${item.name}"?`,
-                      )
-                    ) {
-                      onDelete(item.id);
-                    }
-                  }}
-                  className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
-                >
-                  Delete
-                </button>
+               <button
+                   onClick={() => onEdit(item)}
+                   className="mr-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                 >
+                   Edit
+                 </button>
+                 {canDelete && (
+                   <button
+                     onClick={() => {
+                       if (
+                         window.confirm(
+                           `Are you sure you want to delete "${item.name}"?`,
+                         )
+                       ) {
+                         onDelete(item.id);
+                       }
+                     }}
+                     className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                   >
+                     Delete
+                   </button>
+                 )}
               </td>
             </tr>
           ))}
