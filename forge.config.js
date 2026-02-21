@@ -30,7 +30,9 @@ module.exports = {
     ],
     afterCopy: [copyPrismaModules],
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+    enabled: false,
+  },
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
@@ -50,10 +52,10 @@ module.exports = {
     },
   ],
   plugins: [
-    {
-      name: '@electron-forge/plugin-auto-unpack-natives',
-      config: {},
-    },
+    // {
+    //   name: '@electron-forge/plugin-auto-unpack-natives',
+    //   config: {},
+    // },
     {
       name: '@electron-forge/plugin-webpack',
       config: {

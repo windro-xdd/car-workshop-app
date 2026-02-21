@@ -26,6 +26,7 @@ export interface Item {
   name: string;
   category: string;
   unitPrice: number;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +36,7 @@ export interface CreateItemInput {
   name: string;
   category: string;
   unitPrice: number;
+  isActive?: boolean;
 }
 
 export interface UpdateItemInput {
@@ -43,6 +45,7 @@ export interface UpdateItemInput {
   name?: string;
   category?: string;
   unitPrice?: number;
+  isActive?: boolean;
 }
 
 export interface Invoice {

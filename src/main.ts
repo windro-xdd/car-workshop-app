@@ -112,6 +112,7 @@ ipcMain.handle('create-item', async (_event, data) => {
         name: data.name,
         category: data.category,
         unitPrice: data.unitPrice,
+        isActive: data.isActive ?? true,
       },
     });
     return { success: true, data: item };
@@ -133,6 +134,7 @@ ipcMain.handle('update-item', async (_event, data) => {
         name: data.name,
         category: data.category,
         unitPrice: data.unitPrice,
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
       },
     });
     return { success: true, data: item };
@@ -147,20 +149,10 @@ ipcMain.handle('update-item', async (_event, data) => {
 
 ipcMain.handle('delete-item', async (_event, id: string) => {
   try {
-    // Check if item is referenced by any invoice line items
-    const usageCount = await prisma.lineItem.count({
-      where: { itemId: id },
-    });
-
-    if (usageCount > 0) {
-      return {
-        success: false,
-        error: `Cannot delete this item because it is used in ${usageCount} invoice line item${usageCount > 1 ? 's' : ''}. Remove it from all invoices first.`,
-      };
-    }
-
-    await prisma.item.delete({
+    // Instead of deleting, mark as inactive to avoid foreign key constraint issues
+    await prisma.item.update({
       where: { id },
+      data: { isActive: false },
     });
     return { success: true };
   } catch (error) {

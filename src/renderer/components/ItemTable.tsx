@@ -55,46 +55,56 @@ export const ItemTable: React.FC<ItemTableProps> = ({
               <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Name</th>
               <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Category</th>
               <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Unit Price (₹)</th>
+              <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100">
-            {items.map((item) => (
-              <tr
-                key={item.id}
-                className="hover:bg-zinc-50/50 transition-colors duration-150 ease-in-out bg-white"
-              >
-                <td className="px-6 py-4 text-sm text-zinc-900 font-mono">{item.code}</td>
-                <td className="px-6 py-4 text-sm text-zinc-900 font-medium">{item.name}</td>
-                <td className="px-6 py-4 text-sm text-zinc-600">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800">
-                    {item.category}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-sm text-zinc-900 text-right font-semibold">
-                  {item.unitPrice.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 text-right space-x-2">
-                   <button
-                     onClick={() => onEdit(item)}
-                     className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-zinc-600 bg-transparent hover:text-brand-600 hover:bg-brand-50 transition-colors duration-150"
-                     aria-label={`Edit ${item.name}`}
-                   >
-                     Edit
-                   </button>
-                  {canDelete && (
+           <tbody className="divide-y divide-zinc-100">
+             {items.map((item) => (
+               <tr
+                 key={item.id}
+                 className={`transition-colors duration-150 ease-in-out ${item.isActive ? 'hover:bg-zinc-50/50 bg-white' : 'bg-zinc-50/30 hover:bg-zinc-50/50'}`}
+               >
+                 <td className="px-6 py-4 text-sm text-zinc-900 font-mono">{item.code}</td>
+                 <td className={`px-6 py-4 text-sm font-medium ${item.isActive ? 'text-zinc-900' : 'text-zinc-600'}`}>{item.name}</td>
+                 <td className="px-6 py-4 text-sm text-zinc-600">
+                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-800">
+                     {item.category}
+                   </span>
+                 </td>
+                 <td className={`px-6 py-4 text-sm text-right font-semibold ${item.isActive ? 'text-zinc-900' : 'text-zinc-600'}`}>
+                   {item.unitPrice.toFixed(2)}
+                 </td>
+                 <td className="px-6 py-4 text-sm">
+                   <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                     item.isActive 
+                       ? 'bg-green-50 text-green-700' 
+                       : 'bg-red-50 text-red-700'
+                   }`}>
+                     {item.isActive ? 'In Stock' : 'Out of Stock'}
+                   </span>
+                 </td>
+                 <td className="px-6 py-4 text-right space-x-2">
                     <button
-                      onClick={() => handleDeleteClick(item)}
-                      className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-zinc-500 bg-transparent hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
-                      aria-label={`Delete ${item.name}`}
+                      onClick={() => onEdit(item)}
+                      className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-zinc-600 bg-transparent hover:text-brand-600 hover:bg-brand-50 transition-colors duration-150"
+                      aria-label={`Edit ${item.name}`}
                     >
-                      Delete
+                      Edit
                     </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
+                   {canDelete && (
+                     <button
+                       onClick={() => handleDeleteClick(item)}
+                       className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium rounded text-zinc-500 bg-transparent hover:text-red-600 hover:bg-red-50 transition-colors duration-150"
+                       aria-label={`Delete ${item.name}`}
+                     >
+                       Delete
+                     </button>
+                   )}
+                 </td>
+               </tr>
+             ))}
+           </tbody>
         </table>
       </div>
     </div>
