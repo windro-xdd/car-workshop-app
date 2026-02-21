@@ -7,26 +7,28 @@ import { AmendmentForm } from '../components/AmendmentForm';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { useItemStore } from '../store/itemStore';
 import { useUserStore } from '../store/userStore';
+import { useToast } from '../components/ToastProvider';
 import { Invoice, LineItem } from '../../types';
 import { generateInvoiceNumber } from '../utils/invoiceUtils';
 
 export const InvoicePage: React.FC = () => {
-   const {
-     invoices,
-     lineItems,
-     gstPercentage,
-     loading,
-     error,
-     setInvoices,
-     setLineItems,
-     addLineItem,
-     removeLineItem,
-     setLoading,
-     setError,
-   } = useInvoiceStore();
+    const {
+      invoices,
+      lineItems,
+      gstPercentage,
+      loading,
+      error,
+      setInvoices,
+      setLineItems,
+      addLineItem,
+      removeLineItem,
+      setLoading,
+      setError,
+    } = useInvoiceStore();
 
-   const { items, setItems } = useItemStore();
-   const { currentUser } = useUserStore();
+    const { items, setItems } = useItemStore();
+    const { currentUser } = useUserStore();
+    const { showToast } = useToast();
 
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -81,121 +83,121 @@ export const InvoicePage: React.FC = () => {
     addLineItem(newLineItem);
   };
 
-  const handleCreateInvoice = async () => {
-    if (!customerName.trim()) {
-      alert('Please enter customer name');
-      return;
-    }
+   const handleCreateInvoice = async () => {
+     if (!customerName.trim()) {
+       showToast('Please enter customer name', 'error', 4000);
+       return;
+     }
 
-    if (lineItems.length === 0) {
-      alert('Please add at least one item to the invoice');
-      return;
-    }
+     if (lineItems.length === 0) {
+       showToast('Please add at least one item to the invoice', 'error', 4000);
+       return;
+     }
 
-    setLoading(true);
-    try {
-      const invoiceNumber = generateInvoiceNumber((invoices || []).length + 1);
-      const grossAmount = lineItems.reduce((sum, line) => sum + line.lineTotal, 0);
-      const gstAmount = Number((grossAmount * (gstPercentage / 100)).toFixed(2));
-      const netTotal = Number((grossAmount + gstAmount).toFixed(2));
+     setLoading(true);
+     try {
+       const invoiceNumber = generateInvoiceNumber((invoices || []).length + 1);
+       const grossAmount = lineItems.reduce((sum, line) => sum + line.lineTotal, 0);
+       const gstAmount = Number((grossAmount * (gstPercentage / 100)).toFixed(2));
+       const netTotal = Number((grossAmount + gstAmount).toFixed(2));
 
-      const newInvoice: Invoice = {
-         id: `inv_${Date.now()}`,
-         invoiceNumber,
-         invoiceDate: new Date(),
-         customerName,
-         customerPhone,
-         customerEmail,
-         grossAmount,
-         gstAmount,
-         netTotal,
-         gstPercentage,
-         status: 'Final',
-         isAmendment: false,
-         userId: currentUser!.id,
-         createdAt: new Date(),
-         updatedAt: new Date(),
-       };
+       const newInvoice: Invoice = {
+          id: `inv_${Date.now()}`,
+          invoiceNumber,
+          invoiceDate: new Date(),
+          customerName,
+          customerPhone,
+          customerEmail,
+          grossAmount,
+          gstAmount,
+          netTotal,
+          gstPercentage,
+          status: 'Final',
+          isAmendment: false,
+          userId: currentUser!.id,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
 
-      const result = await window.electronAPI.createInvoice({
-        ...newInvoice,
-        lineItems: lineItems.map((line) => ({
-          itemId: line.itemId,
-          quantity: line.quantity,
-          unitPrice: line.unitPrice,
-        })),
-      });
+       const result = await window.electronAPI.createInvoice({
+         ...newInvoice,
+         lineItems: lineItems.map((line) => ({
+           itemId: line.itemId,
+           quantity: line.quantity,
+           unitPrice: line.unitPrice,
+         })),
+       });
 
-      if (result.success) {
-        const invoice = result.data as Invoice;
-        setInvoices([...(invoices || []), invoice]);
-        setLineItems([]);
-        setCustomerName('');
-        setCustomerPhone('');
-        setCustomerEmail('');
-        setError(null);
-        alert(`Invoice created: ${invoiceNumber}`);
-      } else {
-        setError(result.error || 'Failed to create invoice');
-      }
-    } catch (err) {
-      setError('Error creating invoice');
+       if (result.success) {
+         const invoice = result.data as Invoice;
+         setInvoices([...(invoices || []), invoice]);
+         setLineItems([]);
+         setCustomerName('');
+         setCustomerPhone('');
+         setCustomerEmail('');
+         setError(null);
+         showToast(`Invoice created: ${invoiceNumber}`, 'success', 4000);
+       } else {
+         setError(result.error || 'Failed to create invoice');
+         showToast(result.error || 'Failed to create invoice', 'error', 5000);
+       }
+     } catch (err) {
+       setError('Error creating invoice');
+       showToast('Error creating invoice', 'error', 5000);
+       console.error(err);
+     } finally {
+       setLoading(false);
+     }
+   };
+
+   const handleDeleteInvoice = async (id: string) => {
+     setLoading(true);
+     try {
+       const result = await window.electronAPI.deleteInvoice(id);
+       if (result.success) {
+         setInvoices((invoices || []).filter((inv) => inv.id !== id));
+         setError(null);
+         showToast('Invoice deleted successfully', 'success', 4000);
+       } else {
+         setError(result.error || 'Failed to delete invoice');
+         showToast(result.error || 'Failed to delete invoice', 'error', 5000);
+       }
+     } catch (err) {
+       setError('Error deleting invoice');
+       showToast('Error deleting invoice', 'error', 5000);
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteInvoice = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this invoice?')) {
-      return;
-    }
+   const handleDownloadPDF = async (invoiceId: string) => {
+     const invoice = invoices?.find((inv) => inv.id === invoiceId);
+     if (!invoice) {
+       showToast('Invoice not found', 'error', 4000);
+       return;
+     }
+     setSelectedInvoiceForPDF(invoice);
+   };
 
-    setLoading(true);
-    try {
-      const result = await window.electronAPI.deleteInvoice(id);
-      if (result.success) {
-        setInvoices((invoices || []).filter((inv) => inv.id !== id));
-        setError(null);
-        alert('Invoice deleted successfully');
-      } else {
-        setError(result.error || 'Failed to delete invoice');
-      }
-    } catch (err) {
-      setError('Error deleting invoice');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDownloadPDF = async (invoiceId: string) => {
-    const invoice = invoices?.find((inv) => inv.id === invoiceId);
-    if (!invoice) {
-      alert('Invoice not found');
-      return;
-    }
-    setSelectedInvoiceForPDF(invoice);
-  };
-
-  const handleCreateAmendment = async (data: any) => {
-    setLoading(true);
-    try {
-      const result = await window.electronAPI.createAmendment(data);
-      if (result.success) {
-        const amendment = result.data as Invoice;
-        setInvoices([...(invoices || []), amendment]);
-        setSelectedInvoiceForAmendment(null);
-        alert(`Amendment created: ${amendment.invoiceNumber}`);
-      } else {
-        alert(`Error: ${result.error}`);
-      }
-    } catch (err) {
-      alert(`Failed to create amendment: ${err}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+   const handleCreateAmendment = async (data: any) => {
+     setLoading(true);
+     try {
+       const result = await window.electronAPI.createAmendment(data);
+       if (result.success) {
+         const amendment = result.data as Invoice;
+         setInvoices([...(invoices || []), amendment]);
+         setSelectedInvoiceForAmendment(null);
+         showToast(`Amendment created: ${amendment.invoiceNumber}`, 'success', 4000);
+       } else {
+         showToast(`Error: ${result.error}`, 'error', 5000);
+       }
+     } catch (err) {
+       showToast(`Failed to create amendment`, 'error', 5000);
+     } finally {
+       setLoading(false);
+     }
+   };
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
@@ -245,7 +247,7 @@ export const InvoicePage: React.FC = () => {
         <InvoiceTable
           invoices={invoices || []}
           onSelectInvoice={(invoice) => {
-            alert(`View invoice: ${invoice.invoiceNumber}`);
+            showToast(`Viewing invoice: ${invoice.invoiceNumber}`, 'info', 3000);
           }}
           onDeleteInvoice={handleDeleteInvoice}
           onDownloadPDF={handleDownloadPDF}
@@ -262,10 +264,10 @@ export const InvoicePage: React.FC = () => {
             onDownload={async (invoiceId: string) => {
               const result = await window.electronAPI.saveInvoicePDF(invoiceId);
               if (result.success) {
-                alert(`PDF saved: ${result.data?.fileName}`);
+                showToast(`PDF saved: ${result.data?.fileName}`, 'success', 4000);
                 setSelectedInvoiceForPDF(null);
               } else {
-                alert(`Error: ${result.error}`);
+                showToast(`Error: ${result.error}`, 'error', 5000);
               }
             }}
           />
