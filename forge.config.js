@@ -1,5 +1,6 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const { ForgeExternalsPlugin } = require('@timfish/forge-externals-plugin');
 
 module.exports = {
   packagerConfig: {
@@ -32,6 +33,10 @@ module.exports = {
       name: '@electron-forge/plugin-auto-unpack-natives',
       config: {},
     },
+    new ForgeExternalsPlugin({
+      externals: ['@prisma/client', '.prisma/client'],
+      includeDeps: true,
+    }),
     {
       name: '@electron-forge/plugin-webpack',
       config: {
