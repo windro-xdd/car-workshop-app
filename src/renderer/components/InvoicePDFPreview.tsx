@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Invoice } from '../../types';
+import { Invoice, Item } from '../../types';
 
 interface InvoicePDFPreviewProps {
   invoice: Invoice;
+  items: Item[];
   onClose: () => void;
 }
 
 export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
   invoice,
+  items,
   onClose,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -106,14 +108,18 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
               </thead>
               <tbody>
                 {invoice.lineItems && invoice.lineItems.length > 0 ? (
-                  invoice.lineItems.map((item: any) => (
-                    <tr key={item.id} className="border-b border-zinc-200">
-                      <td className="py-2">Item #{item.itemId}</td>
-                      <td className="text-center py-2">{item.quantity}</td>
-                      <td className="text-right py-2">₹{item.unitPrice.toFixed(2)}</td>
-                      <td className="text-right py-2">₹{item.lineTotal.toFixed(2)}</td>
-                    </tr>
-                  ))
+                  invoice.lineItems.map((lineItem: any) => {
+                    const item = items.find(i => i.id === lineItem.itemId);
+                    const itemName = item?.name || 'Unknown Item';
+                    return (
+                      <tr key={lineItem.id} className="border-b border-zinc-200">
+                        <td className="py-2">{itemName}</td>
+                        <td className="text-center py-2">{lineItem.quantity}</td>
+                        <td className="text-right py-2">₹{lineItem.unitPrice.toFixed(2)}</td>
+                        <td className="text-right py-2">₹{lineItem.lineTotal.toFixed(2)}</td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td colSpan={4} className="text-center py-4 text-zinc-500">
@@ -124,7 +130,9 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
               </tbody>
             </table>
 
-            <div className="flex justify-end mb-6">
+            <div className="flex-1"></div>
+
+            <div className="flex justify-end">
               <div className="w-64">
                 <div className="flex justify-between text-sm mb-2">
                   <span>Subtotal:</span>
