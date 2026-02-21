@@ -3,6 +3,14 @@ const fs = require('fs-extra');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
+/**
+ * Copy Prisma client modules from the project's node_modules into the build's node_modules.
+ * @param {string} buildPath - Path to the build output directory where node_modules will be created/updated.
+ * @param {_electronVersion} _electronVersion - Electron version (unused).
+ * @param {_platform} _platform - Target platform (unused).
+ * @param {_arch} _arch - Target architecture (unused).
+ * @param {function(Error=):void} callback - Called with an Error if any copy fails, otherwise called with no arguments on success.
+ */
 function copyPrismaModules(buildPath, _electronVersion, _platform, _arch, callback) {
   const srcNodeModules = path.resolve(__dirname, 'node_modules');
   const destNodeModules = path.join(buildPath, 'node_modules');
