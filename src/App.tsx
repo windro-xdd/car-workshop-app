@@ -23,173 +23,149 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       <ModalProvider>
-        <div className="min-h-screen bg-gray-50">
-          <nav className="bg-white shadow-md sticky top-0 z-40">
-            <div className="max-w-6xl mx-auto px-4 md:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="text-2xl font-bold text-blue-600">🚗</div>
-                  <h1 className="text-xl md:text-2xl font-bold text-gray-900">Kripa Car Care</h1>
-                </div>
+        <div className="flex h-screen bg-zinc-50 overflow-hidden">
+          {isMenuOpen && (
+            <div 
+              className="fixed inset-0 bg-zinc-900/50 z-40 md:hidden transition-opacity" 
+              onClick={() => setIsMenuOpen(false)}
+            />
+          )}
 
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="md:hidden px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition"
-                  aria-label="Toggle menu"
-                  aria-expanded={isMenuOpen}
-                >
-                  {isMenuOpen ? '✕' : '☰'}
-                </button>
-
-                <div className="hidden md:flex items-center space-x-4">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        setCurrentPage('inventory');
-                        setIsMenuOpen(false);
-                      }}
-                      className={`px-6 py-2 rounded-lg font-semibold transition ${
-                        currentPage === 'inventory'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
-                    >
-                      📦 Inventory
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCurrentPage('invoice');
-                        setIsMenuOpen(false);
-                      }}
-                      className={`px-6 py-2 rounded-lg font-semibold transition ${
-                        currentPage === 'invoice'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
-                    >
-                      📄 Invoices
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCurrentPage('settings');
-                        setIsMenuOpen(false);
-                      }}
-                      className={`px-6 py-2 rounded-lg font-semibold transition ${
-                        currentPage === 'settings'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
-                    >
-                      ⚙️ Settings
-                    </button>
-                    <button
-                      onClick={() => {
-                        setCurrentPage('reporting');
-                        setIsMenuOpen(false);
-                      }}
-                      className={`px-6 py-2 rounded-lg font-semibold transition ${
-                        currentPage === 'reporting'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                      }`}
-                    >
-                      📊 Reports
-                    </button>
-                  </div>
-                  <div className="border-l pl-4 flex items-center space-x-3">
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                      <p className="text-xs text-gray-500 capitalize">{currentUser.role}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        logout();
-                      }}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium"
-                    >
-                      Logout
-                    </button>
-                  </div>
+          <nav className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-zinc-200 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col ${
+            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}>
+            <div className="h-16 flex items-center px-6 border-b border-zinc-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-brand-50 text-brand-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path fillRule="evenodd" d="M11.078 2.25c-.917 0-1.699.663-1.85 1.567L9.05 4.889c-.02.12-.115.26-.297.348a7.493 7.493 0 00-.986.57c-.166.115-.334.126-.45.083L6.3 5.508a1.925 1.925 0 00-2.282.818l-1.07 1.852a1.92 1.92 0 00.333 2.365l1.258 1.03c.11.09.192.225.211.37A7.492 7.492 0 004.5 12c0 .26.015.515.045.766.019.145-.063.28-.173.37l-1.258 1.03a1.92 1.92 0 00-.333 2.365l1.07 1.852a1.925 1.925 0 002.282.818l1.019-.382c.115-.043.283-.031.45.082.31.214.641.405.985.57.182.088.277.228.297.35l.178 1.071c.151.904.933 1.567 1.85 1.567h2.144c.917 0 1.699-.663 1.85-1.567l.178-1.072c.02-.12.114-.26.297-.349.344-.165.675-.356.985-.57.167-.114.335-.125.45-.082l1.02.382a1.925 1.925 0 002.28-.818l1.07-1.852a1.92 1.92 0 00-.332-2.365l-1.258-1.03c-.111-.09-.193-.225-.211-.37a7.492 7.492 0 00-.045-.766c-.019-.145.062-.28.173-.37l1.258-1.03a1.92 1.92 0 00.332-2.365l-1.07-1.852a1.925 1.925 0 00-2.28-.818l-1.02.382c-.114.043-.282.031-.449-.083a7.49 7.49 0 00-.986-.57c-.183-.087-.277-.227-.297-.348l-.179-1.072a1.925 1.925 0 00-1.85-1.567h-2.144zM12 15.75a3.75 3.75 0 100-7.5 3.75 3.75 0 000 7.5z" clipRule="evenodd" />
+                  </svg>
                 </div>
+                <h1 className="text-xl font-bold text-zinc-900 tracking-tight">Kripa Car Care</h1>
               </div>
+              <button 
+                onClick={() => setIsMenuOpen(false)}
+                className="md:hidden ml-auto p-2 text-zinc-400 hover:text-zinc-600 rounded-md"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-              {isMenuOpen && (
-                <div className="md:hidden mt-4 space-y-2 pb-4">
-                  <button
-                    onClick={() => {
-                      setCurrentPage('inventory');
-                      setIsMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 rounded-lg font-semibold transition ${
-                      currentPage === 'inventory'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
-                  >
-                    📦 Inventory
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCurrentPage('invoice');
-                      setIsMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 rounded-lg font-semibold transition ${
-                      currentPage === 'invoice'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
-                  >
-                    📄 Invoices
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCurrentPage('settings');
-                      setIsMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 rounded-lg font-semibold transition ${
-                      currentPage === 'settings'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
-                  >
-                    ⚙️ Settings
-                  </button>
-                  <button
-                    onClick={() => {
-                      setCurrentPage('reporting');
-                      setIsMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-2 rounded-lg font-semibold transition ${
-                      currentPage === 'reporting'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
-                  >
-                    📊 Reports
-                  </button>
-                  <hr className="my-2" />
-                  <div className="px-4 py-2 text-sm text-gray-700">
-                    <p className="font-medium">{currentUser.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{currentUser.role}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium"
-                  >
-                    Logout
-                  </button>
+            <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
+              <button
+                onClick={() => {
+                  setCurrentPage('inventory');
+                  setIsMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === 'inventory'
+                    ? 'text-brand-700 bg-brand-50'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                Inventory
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentPage('invoice');
+                  setIsMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === 'invoice'
+                    ? 'text-brand-700 bg-brand-50'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Invoices
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentPage('settings');
+                  setIsMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === 'settings'
+                    ? 'text-brand-700 bg-brand-50'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentPage('reporting');
+                  setIsMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === 'reporting'
+                    ? 'text-brand-700 bg-brand-50'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Reports
+              </button>
+            </div>
+
+            <div className="p-4 border-t border-zinc-100 shrink-0">
+              <div className="flex items-center gap-3 px-3 py-2">
+                <div className="w-10 h-10 rounded-full bg-zinc-100 flex items-center justify-center shrink-0 border border-zinc-200">
+                  <span className="text-zinc-600 font-semibold text-sm">
+                    {currentUser.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
-              )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-zinc-900 truncate">{currentUser.name}</p>
+                  <p className="text-xs text-zinc-500 capitalize truncate">{currentUser.role}</p>
+                </div>
+                <button
+                  onClick={() => logout()}
+                  className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                  aria-label="Logout"
+                  title="Logout"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </nav>
 
-          {currentPage === 'inventory' && <InventoryPage />}
-          {currentPage === 'invoice' && <InvoicePage />}
-          {currentPage === 'settings' && <SettingsPage />}
-          {currentPage === 'reporting' && <ReportingPage />}
+          <main className="flex-1 flex flex-col min-w-0 bg-zinc-50/50 overflow-hidden">
+            <div className="md:hidden h-16 border-b border-zinc-200 bg-white flex items-center px-4 shrink-0">
+              <button
+                onClick={() => setIsMenuOpen(true)}
+                className="p-2 -ml-2 text-zinc-500 hover:text-zinc-900 rounded-md"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <h1 className="ml-2 text-lg font-bold text-zinc-900 tracking-tight">Kripa Car Care</h1>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {currentPage === 'inventory' && <InventoryPage />}
+              {currentPage === 'invoice' && <InvoicePage />}
+              {currentPage === 'settings' && <SettingsPage />}
+              {currentPage === 'reporting' && <ReportingPage />}
+            </div>
+          </main>
         </div>
       </ModalProvider>
     </ToastProvider>

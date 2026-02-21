@@ -6,4 +6,7 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
+  externals: {
+    '@prisma/client': 'commonjs @prisma/client',
+  },
 };

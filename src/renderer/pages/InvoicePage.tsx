@@ -169,15 +169,6 @@ export const InvoicePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-   const handleDownloadPDF = async (invoiceId: string) => {
-     const invoice = invoices?.find((inv) => inv.id === invoiceId);
-     if (!invoice) {
-       showToast('Invoice not found', 'error', 4000);
-       return;
-     }
-     setSelectedInvoiceForPDF(invoice);
    };
 
    const handleCreateAmendment = async (data: any) => {
@@ -200,20 +191,21 @@ export const InvoicePage: React.FC = () => {
    };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold mb-2 text-gray-900">Invoice Management</h1>
-        <p className="text-gray-600 mb-8">Create and manage workshop invoices</p>
+    <div className="p-6 md:p-8 animate-in fade-in duration-300">
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Invoice Management</h1>
+        <p className="text-sm md:text-base text-zinc-500 mt-1">Create and manage workshop invoices</p>
+      </div>
 
-        {error && (
-          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg shadow-sm text-sm">
+          {error}
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <div className="lg:col-span-2">
-            <InvoiceForm
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <InvoiceForm
               items={items || []}
               gstPercentage={gstPercentage}
               onLineItemAdd={handleLineItemAdd}
@@ -237,52 +229,43 @@ export const InvoicePage: React.FC = () => {
             <button
               onClick={handleCreateInvoice}
               disabled={loading || lineItems.length === 0 || !customerName}
-              className="w-full mt-6 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+              className="w-full mt-6 px-6 py-3 bg-brand-600 text-white font-medium rounded-xl shadow-sm hover:bg-brand-700 hover:shadow disabled:bg-zinc-100 disabled:text-zinc-400 disabled:cursor-not-allowed transition-all duration-200 ease-out"
             >
               {loading ? 'Creating...' : 'Create Invoice'}
             </button>
           </div>
         </div>
 
-        <InvoiceTable
-          invoices={invoices || []}
-          onSelectInvoice={(invoice) => {
-            showToast(`Viewing invoice: ${invoice.invoiceNumber}`, 'info', 3000);
-          }}
-          onDeleteInvoice={handleDeleteInvoice}
-          onDownloadPDF={handleDownloadPDF}
-          onCreateAmendment={(invoiceId) => {
-            const inv = invoices?.find((i) => i.id === invoiceId);
-            if (inv) setSelectedInvoiceForAmendment(inv);
-          }}
-        />
+        <div className="mb-6">
+           <InvoiceTable
+           invoices={invoices || []}
+           onSelectInvoice={(invoice) => {
+             setSelectedInvoiceForPDF(invoice);
+           }}
+           onDeleteInvoice={handleDeleteInvoice}
+           onCreateAmendment={(invoiceId) => {
+             const inv = invoices?.find((i) => i.id === invoiceId);
+             if (inv) setSelectedInvoiceForAmendment(inv);
+           }}
+         />
 
-        {selectedInvoiceForPDF && (
-          <InvoicePDFPreview
-            invoice={selectedInvoiceForPDF}
-            onClose={() => setSelectedInvoiceForPDF(null)}
-            onDownload={async (invoiceId: string) => {
-              const result = await window.electronAPI.saveInvoicePDF(invoiceId);
-              if (result.success) {
-                showToast(`PDF saved: ${result.data?.fileName}`, 'success', 4000);
-                setSelectedInvoiceForPDF(null);
-              } else {
-                showToast(`Error: ${result.error}`, 'error', 5000);
-              }
-            }}
-          />
-        )}
+         {selectedInvoiceForPDF && (
+           <InvoicePDFPreview
+             invoice={selectedInvoiceForPDF}
+             onClose={() => setSelectedInvoiceForPDF(null)}
+           />
+         )}
 
         {selectedInvoiceForAmendment && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-              <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-                <h2 className="text-xl font-bold">Create Amendment: {selectedInvoiceForAmendment.invoiceNumber}</h2>
+          <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
+            <div className="bg-white rounded-xl shadow-xl border border-zinc-200 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+              <div className="bg-white border-b border-zinc-100 p-5 flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-zinc-900 tracking-tight">Create Amendment: <span className="font-mono text-zinc-500 text-sm ml-1">{selectedInvoiceForAmendment.invoiceNumber}</span></h2>
                 <button
                   onClick={() => setSelectedInvoiceForAmendment(null)}
-                  className="text-white hover:text-gray-200 text-2xl font-bold"
+                  className="text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 p-1.5 rounded-lg transition-colors duration-200"
                 >
-                  ✕
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
               </div>
 

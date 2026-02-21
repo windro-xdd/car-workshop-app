@@ -28,21 +28,21 @@ const Toast: React.FC<ToastProps> = ({ toast, onClose }) => {
     success: 'bg-green-50 border-green-200',
     error: 'bg-red-50 border-red-200',
     warning: 'bg-yellow-50 border-yellow-200',
-    info: 'bg-blue-50 border-blue-200',
+    info: 'bg-brand-50 border-brand-200',
   }[toast.type];
 
   const textColor = {
     success: 'text-green-800',
     error: 'text-red-800',
     warning: 'text-yellow-800',
-    info: 'text-blue-800',
+    info: 'text-brand-800',
   }[toast.type];
 
   const iconColor = {
     success: 'text-green-600',
     error: 'text-red-600',
     warning: 'text-yellow-600',
-    info: 'text-blue-600',
+    info: 'text-brand-600',
   }[toast.type];
 
   const icons = {
