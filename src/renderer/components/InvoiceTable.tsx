@@ -7,6 +7,7 @@ interface InvoiceTableProps {
   onSelectInvoice: (invoice: Invoice) => void;
   onDeleteInvoice: (id: string) => void;
   onDownloadPDF?: (invoiceId: string) => Promise<void>;
+  onCreateAmendment?: (invoiceId: string) => void;
 }
 
 export const InvoiceTable: React.FC<InvoiceTableProps> = ({
@@ -14,6 +15,7 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
   onSelectInvoice,
   onDeleteInvoice,
   onDownloadPDF,
+  onCreateAmendment,
 }) => {
   if (invoices.length === 0) {
     return (
@@ -81,6 +83,15 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                     title="Download PDF"
                   >
                     PDF
+                  </button>
+                )}
+                {onCreateAmendment && !invoice.isAmendment && (
+                  <button
+                    onClick={() => onCreateAmendment(invoice.id)}
+                    className="px-2 py-1 text-purple-600 hover:bg-purple-50 rounded transition text-sm"
+                    title="Create amendment for this invoice"
+                  >
+                    Amend
                   </button>
                 )}
                 <button

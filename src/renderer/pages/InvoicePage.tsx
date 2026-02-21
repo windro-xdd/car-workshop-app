@@ -3,6 +3,7 @@ import { InvoiceForm } from '../components/InvoiceForm';
 import { InvoiceSummary } from '../components/InvoiceSummary';
 import { InvoiceTable } from '../components/InvoiceTable';
 import { InvoicePDFPreview } from '../components/InvoicePDFPreview';
+import { AmendmentForm } from '../components/AmendmentForm';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { useItemStore } from '../store/itemStore';
 import { Invoice, LineItem } from '../../types';
@@ -29,6 +30,7 @@ export const InvoicePage: React.FC = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [selectedInvoiceForPDF, setSelectedInvoiceForPDF] = useState<Invoice | null>(null);
+  const [selectedInvoiceForAmendment, setSelectedInvoiceForAmendment] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadItems();
@@ -173,6 +175,25 @@ export const InvoicePage: React.FC = () => {
     setSelectedInvoiceForPDF(invoice);
   };
 
+  const handleCreateAmendment = async (data: any) => {
+    setLoading(true);
+    try {
+      const result = await window.electronAPI.createAmendment(data);
+      if (result.success) {
+        const amendment = result.data as Invoice;
+        setInvoices([...(invoices || []), amendment]);
+        setSelectedInvoiceForAmendment(null);
+        alert(`Amendment created: ${amendment.invoiceNumber}`);
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err) {
+      alert(`Failed to create amendment: ${err}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-6xl mx-auto">
@@ -225,6 +246,10 @@ export const InvoicePage: React.FC = () => {
           }}
           onDeleteInvoice={handleDeleteInvoice}
           onDownloadPDF={handleDownloadPDF}
+          onCreateAmendment={(invoiceId) => {
+            const inv = invoices?.find((i) => i.id === invoiceId);
+            if (inv) setSelectedInvoiceForAmendment(inv);
+          }}
         />
 
         {selectedInvoiceForPDF && (
@@ -241,6 +266,32 @@ export const InvoicePage: React.FC = () => {
               }
             }}
           />
+        )}
+
+        {selectedInvoiceForAmendment && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+                <h2 className="text-xl font-bold">Create Amendment: {selectedInvoiceForAmendment.invoiceNumber}</h2>
+                <button
+                  onClick={() => setSelectedInvoiceForAmendment(null)}
+                  className="text-white hover:text-gray-200 text-2xl font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6">
+                <AmendmentForm
+                  originalInvoice={selectedInvoiceForAmendment}
+                  items={items || []}
+                  onSubmit={handleCreateAmendment}
+                  onCancel={() => setSelectedInvoiceForAmendment(null)}
+                  isLoading={loading}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

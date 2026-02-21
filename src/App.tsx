@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { InventoryPage } from './renderer/pages/InventoryPage';
 import { InvoicePage } from './renderer/pages/InvoicePage';
+import { SettingsPage } from './renderer/pages/SettingsPage';
 import './index.css';
 
-type Page = 'inventory' | 'invoice';
+type Page = 'inventory' | 'invoice' | 'settings';
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('inventory');
@@ -38,6 +39,16 @@ const App: React.FC = () => {
               >
                 📄 Invoices
               </button>
+              <button
+                onClick={() => setCurrentPage('settings')}
+                className={`px-6 py-2 rounded-lg font-semibold transition ${
+                  currentPage === 'settings'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                }`}
+              >
+                ⚙️ Settings
+              </button>
             </div>
           </div>
         </div>
@@ -45,6 +56,7 @@ const App: React.FC = () => {
 
       {currentPage === 'inventory' && <InventoryPage />}
       {currentPage === 'invoice' && <InvoicePage />}
+      {currentPage === 'settings' && <SettingsPage />}
     </div>
   );
 };

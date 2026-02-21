@@ -44,6 +44,28 @@ const electronAPI = {
     ipcRenderer.invoke('save-invoice-pdf', invoiceId) as Promise<
       IpcResponse<{ filePath: string; fileName: string }>
     >,
+
+  createAmendment: (data: any) =>
+    ipcRenderer.invoke('create-amendment', data) as Promise<IpcResponse<Invoice>>,
+
+  listAmendmentsForInvoice: (invoiceId: string) =>
+    ipcRenderer.invoke('list-amendments-for-invoice', invoiceId) as Promise<IpcResponse<Invoice[]>>,
+
+  createBackup: () =>
+    ipcRenderer.invoke('create-backup') as Promise<
+      IpcResponse<{ backupPath: string; fileName: string; timestamp: string }>
+    >,
+
+  listBackups: () =>
+    ipcRenderer.invoke('list-backups') as Promise<
+      IpcResponse<{ fileName: string; filePath: string; size: number; createdAt: Date }[]>
+    >,
+
+  restoreBackup: (backupPath: string) =>
+    ipcRenderer.invoke('restore-backup', backupPath) as Promise<IpcResponse<{ message: string; backupPath: string }>>,
+
+  deleteBackup: (backupPath: string) =>
+    ipcRenderer.invoke('delete-backup', backupPath) as Promise<IpcResponse<{ message: string }>>,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
