@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { Item, CreateItemInput, UpdateItemInput } from './types';
+import { Item, CreateItemInput, UpdateItemInput, Invoice, GstConfig, User, LoginInput, CreateUserInput } from './types';
 
 interface IpcResponse<T> {
   success: boolean;
@@ -19,6 +19,62 @@ const electronAPI = {
 
   deleteItem: (id: string) =>
     ipcRenderer.invoke('delete-item', id) as Promise<IpcResponse<void>>,
+
+  getInvoices: () =>
+    ipcRenderer.invoke('get-invoices') as Promise<IpcResponse<Invoice[]>>,
+
+  createInvoice: (data: any) =>
+    ipcRenderer.invoke('create-invoice', data) as Promise<IpcResponse<Invoice>>,
+
+  deleteInvoice: (id: string) =>
+    ipcRenderer.invoke('delete-invoice', id) as Promise<IpcResponse<void>>,
+
+  getGstConfig: () =>
+    ipcRenderer.invoke('get-gst-config') as Promise<IpcResponse<GstConfig>>,
+
+  updateGstConfig: (data: GstConfig) =>
+    ipcRenderer.invoke('update-gst-config', data) as Promise<IpcResponse<GstConfig>>,
+
+  generateInvoicePDF: (invoiceId: string) =>
+    ipcRenderer.invoke('generate-invoice-pdf', invoiceId) as Promise<
+      IpcResponse<{ filePath: string; fileName: string }>
+    >,
+
+  saveInvoicePDF: (invoiceId: string) =>
+    ipcRenderer.invoke('save-invoice-pdf', invoiceId) as Promise<
+      IpcResponse<{ filePath: string; fileName: string }>
+    >,
+
+  createAmendment: (data: any) =>
+    ipcRenderer.invoke('create-amendment', data) as Promise<IpcResponse<Invoice>>,
+
+  listAmendmentsForInvoice: (invoiceId: string) =>
+    ipcRenderer.invoke('list-amendments-for-invoice', invoiceId) as Promise<IpcResponse<Invoice[]>>,
+
+  createBackup: () =>
+    ipcRenderer.invoke('create-backup') as Promise<
+      IpcResponse<{ backupPath: string; fileName: string; timestamp: string }>
+    >,
+
+  listBackups: () =>
+    ipcRenderer.invoke('list-backups') as Promise<
+      IpcResponse<{ fileName: string; filePath: string; size: number; createdAt: Date }[]>
+    >,
+
+  restoreBackup: (backupPath: string) =>
+    ipcRenderer.invoke('restore-backup', backupPath) as Promise<IpcResponse<{ message: string; backupPath: string }>>,
+
+  deleteBackup: (backupPath: string) =>
+    ipcRenderer.invoke('delete-backup', backupPath) as Promise<IpcResponse<{ message: string }>>,
+
+  registerUser: (data: CreateUserInput) =>
+    ipcRenderer.invoke('register-user', data) as Promise<IpcResponse<User>>,
+
+  loginUser: (data: LoginInput) =>
+    ipcRenderer.invoke('login-user', data) as Promise<IpcResponse<User>>,
+
+  getUsers: () =>
+    ipcRenderer.invoke('get-users') as Promise<IpcResponse<User[]>>,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
