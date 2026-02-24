@@ -74,12 +74,13 @@ model Invoice {
 
 // Line Items (Invoice Details)
 model LineItem {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   invoiceId String
   itemId    String
   quantity  Float
   unitPrice Float
-  lineTotal Float @default(0)
+  lineTotal Float   @default(0)
+  remarks   String?
 
   // Relations
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)

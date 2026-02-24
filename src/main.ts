@@ -149,6 +149,15 @@ function migrateDatabase(): void {
       console.log('Migration complete: vehicle columns added');
     }
 
+    // Check if 'remarks' column exists on 'line_items' table
+    const lineItemColumns = db.pragma('table_info(line_items)') as { name: string }[];
+    const hasRemarks = lineItemColumns.some((col: { name: string }) => col.name === 'remarks');
+    if (!hasRemarks) {
+      console.log('Migrating database: adding remarks column to line_items table');
+      db.exec(`ALTER TABLE "line_items" ADD COLUMN "remarks" TEXT;`);
+      console.log('Migration complete: remarks column added to line_items table');
+    }
+
     // Check if 'business_config' table exists
     const bizTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='business_config'").all();
     if (bizTables.length === 0) {
@@ -388,6 +397,7 @@ ipcMain.handle('create-invoice', async (_event, data) => {
              quantity: line.quantity,
              unitPrice: line.unitPrice,
              lineTotal: line.quantity * line.unitPrice,
+             ...(line.remarks ? { remarks: line.remarks } : {}),
            })),
          },
        },
@@ -661,6 +671,7 @@ ipcMain.handle('create-amendment', async (_event, data) => {
              quantity: line.quantity,
              unitPrice: line.unitPrice,
              lineTotal: line.lineTotal,
+             ...(line.remarks ? { remarks: line.remarks } : {}),
            })),
          },
        },

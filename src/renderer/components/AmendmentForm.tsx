@@ -27,6 +27,7 @@ export const AmendmentForm: React.FC<AmendmentFormProps> = ({
   const [notes, setNotes] = useState('');
   const [selectedItemId, setSelectedItemId] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [newItemRemarks, setNewItemRemarks] = useState('');
 
   // Initialize with original line items
   const [amendmentLineItems, setAmendmentLineItems] = useState<AmendmentLineItem[]>(
@@ -55,6 +56,7 @@ export const AmendmentForm: React.FC<AmendmentFormProps> = ({
       quantity,
       unitPrice: item.unitPrice,
       lineTotal,
+      remarks: newItemRemarks.trim() || null,
       isOriginal: false,
       markedForRemoval: false,
     };
@@ -62,6 +64,7 @@ export const AmendmentForm: React.FC<AmendmentFormProps> = ({
     setAmendmentLineItems([...amendmentLineItems, newLineItem]);
     setSelectedItemId('');
     setQuantity(1);
+    setNewItemRemarks('');
   };
 
   const handleToggleRemoval = (index: number) => {
@@ -102,6 +105,7 @@ export const AmendmentForm: React.FC<AmendmentFormProps> = ({
           quantity: line.quantity,
           unitPrice: line.unitPrice,
           lineTotal: line.lineTotal,
+          ...(line.remarks ? { remarks: line.remarks } : {}),
         })),
         gstPercentage: originalInvoice.gstPercentage,
         notes,
@@ -203,7 +207,12 @@ export const AmendmentForm: React.FC<AmendmentFormProps> = ({
                           {line.markedForRemoval && (
                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0"></span>
                           )}
-                          {item?.name}
+                          <div>
+                            <div>{item?.name}</div>
+                            {line.remarks && (
+                              <div className="text-xs text-zinc-500 font-normal">{line.remarks}</div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className={`text-center py-2 px-2 ${line.markedForRemoval ? 'line-through text-zinc-400' : ''}`}>
@@ -286,6 +295,16 @@ export const AmendmentForm: React.FC<AmendmentFormProps> = ({
                   Add Item
                 </button>
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-zinc-500 mb-1">Remarks (optional)</label>
+              <input
+                type="text"
+                value={newItemRemarks}
+                onChange={(e) => setNewItemRemarks(e.target.value)}
+                placeholder="e.g., notes about this item..."
+                className="w-full px-3 py-2 text-sm border border-zinc-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+              />
             </div>
           </div>
         </div>

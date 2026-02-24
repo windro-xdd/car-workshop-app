@@ -69,7 +69,7 @@ export const InvoicePage: React.FC = () => {
     }
   };
 
-  const handleLineItemAdd = (itemId: string, quantity: number, unitPrice: number) => {
+  const handleLineItemAdd = (itemId: string, quantity: number, unitPrice: number, remarks?: string) => {
     const lineTotal = quantity * unitPrice;
     const newLineItem: LineItem = {
       id: `temp_${Date.now()}`,
@@ -78,6 +78,7 @@ export const InvoicePage: React.FC = () => {
       quantity,
       unitPrice,
       lineTotal,
+      remarks: remarks || null,
     };
     addLineItem(newLineItem);
   };
@@ -126,6 +127,7 @@ export const InvoicePage: React.FC = () => {
            itemId: line.itemId,
            quantity: line.quantity,
            unitPrice: line.unitPrice,
+           ...(line.remarks ? { remarks: line.remarks } : {}),
          })),
        });
 

@@ -228,13 +228,15 @@ export const generateInvoicePDF = async (
       lineItemsList.forEach((lineItem, index) => {
         const item = items.find((i) => i.id === lineItem.itemId);
         const itemName = item?.name || 'Unknown Item';
+        const hasRemarks = !!(lineItem as any).remarks;
+        const rowH = hasRemarks ? 34 : itemRowH;
 
         // Row border
-        doc.rect(pageLeft, y, pageWidth, itemRowH).stroke();
+        doc.rect(pageLeft, y, pageWidth, rowH).stroke();
 
         // Vertical lines
         [colDesc, colQty, colRate, colAmt].forEach((x) => {
-          doc.moveTo(x, y).lineTo(x, y + itemRowH).stroke();
+          doc.moveTo(x, y).lineTo(x, y + rowH).stroke();
         });
 
         doc.fillColor('#333333');
@@ -242,7 +244,15 @@ export const generateInvoicePDF = async (
           width: slNoW - 12,
           align: 'center',
         });
-        doc.text(itemName, colDesc + 6, y + 6, { width: descW - 12 });
+        doc.font('Helvetica').text(itemName, colDesc + 6, y + 6, { width: descW - 12 });
+        if (hasRemarks) {
+          doc
+            .fontSize(7)
+            .font('Helvetica-Oblique')
+            .fillColor('#666666')
+            .text((lineItem as any).remarks, colDesc + 6, y + 18, { width: descW - 12 });
+          doc.fontSize(9).font('Helvetica').fillColor('#333333');
+        }
         doc.text(lineItem.quantity.toString(), colQty + 6, y + 6, {
           width: qtyW - 12,
           align: 'center',
@@ -256,7 +266,7 @@ export const generateInvoicePDF = async (
           align: 'right',
         });
 
-        y += itemRowH;
+        y += rowH;
       });
 
       y += 15;

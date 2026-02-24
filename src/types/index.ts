@@ -78,6 +78,7 @@ export interface LineItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  remarks?: string | null;
 }
 
 export interface GstConfig {

@@ -7,7 +7,7 @@ import { calculateLineTotal, calculateGST, calculateNetTotal } from '../utils/in
 interface InvoiceFormProps {
   items: Item[];
   gstPercentage: number;
-  onLineItemAdd: (itemId: string, quantity: number, unitPrice: number) => void;
+  onLineItemAdd: (itemId: string, quantity: number, unitPrice: number, remarks?: string) => void;
   onCustomerInfoChange: (info: {
     customerName: string;
     customerPhone?: string;
@@ -32,6 +32,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [selectedItemId, setSelectedItemId] = useState('');
   const [quantity, setQuantity] = useState('1');
   const [unitPrice, setUnitPrice] = useState('');
+  const [remarks, setRemarks] = useState('');
   const [errors, setErrors] = useState<{ customerName?: string; quantity?: string }>({});
 
   // Propagate customer info changes to parent using useEffect to avoid stale state
@@ -82,10 +83,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       return;
     }
 
-    onLineItemAdd(selectedItemId, parseInt(quantity), parsedPrice);
+    onLineItemAdd(selectedItemId, parseInt(quantity), parsedPrice, remarks.trim() || undefined);
     setSelectedItemId('');
     setQuantity('1');
     setUnitPrice('');
+    setRemarks('');
     showToast('Item added to invoice', 'success', 3000);
   };
 
@@ -254,6 +256,20 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           {errors.quantity && (
             <p id="quantity-error" className="text-red-500 text-xs font-medium mt-1">{errors.quantity}</p>
           )}
+
+          <div className="w-full">
+            <label htmlFor="remarks" className="block text-sm font-medium text-zinc-700 mb-1.5">
+              Remarks / Notes <span className="text-zinc-400 text-xs font-normal">(optional)</span>
+            </label>
+            <input
+              id="remarks"
+              type="text"
+              placeholder="e.g., Front bumper repair, engine oil top-up..."
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+            />
+          </div>
 
           {selectedItemId && (
             <div className="mt-4 p-3 bg-zinc-50 rounded-lg border border-zinc-100 flex items-center text-sm animate-in fade-in duration-200">

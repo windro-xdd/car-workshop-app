@@ -59,7 +59,12 @@ export const InvoiceSummary: React.FC<InvoiceSummaryProps> = ({
                   const item = items.find((i) => i.id === line.itemId);
                   return (
                     <tr key={idx} className="hover:bg-zinc-50/50 transition-colors duration-150 ease-in-out">
-                      <td className="px-4 py-3 text-sm text-zinc-900 font-medium truncate max-w-[120px]" title={item?.name}>{item?.name || 'Unknown'}</td>
+                      <td className="px-4 py-3 text-sm text-zinc-900 font-medium max-w-[180px]" title={item?.name}>
+                        <div className="truncate">{item?.name || 'Unknown'}</div>
+                        {line.remarks && (
+                          <div className="text-xs text-zinc-500 font-normal truncate mt-0.5" title={line.remarks}>{line.remarks}</div>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-zinc-600 text-right">{line.quantity}</td>
                       <td className="px-4 py-3 text-sm text-zinc-600 text-right">{formatCurrency(line.unitPrice)}</td>
                       <td className="px-4 py-3 text-sm text-zinc-900 font-semibold text-right">{formatCurrency(line.lineTotal)}</td>
