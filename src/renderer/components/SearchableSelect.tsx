@@ -67,7 +67,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-zinc-200 rounded-xl shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute top-full left-0 mt-2 bg-white border border-zinc-200 rounded-xl shadow-lg z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 min-w-[320px] w-full">
           <div className="p-2 border-b border-zinc-100">
             <div className="relative">
               <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
