@@ -17,6 +17,11 @@ export const SettingsPage: React.FC = () => {
   const [businessConfigLoading, setBusinessConfigLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Reset database state
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [resetting, setResetting] = useState(false);
+
   useEffect(() => {
     loadBusinessConfig();
   }, []);
@@ -332,6 +337,85 @@ export const SettingsPage: React.FC = () => {
             </h2>
           </div>
           <BackupManager onBackupCreated={() => {}} />
+        </div>
+
+        {/* Reset Database */}
+        <div className="bg-white p-6 md:p-8 rounded-xl shadow-sm border border-red-200">
+          <div className="border-b border-red-100 pb-4 mb-6">
+            <h2 className="text-lg font-semibold text-red-700 flex items-center">
+              <svg className="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+              </svg>
+              Reset Database
+            </h2>
+          </div>
+
+          <p className="text-sm text-zinc-600 mb-4">
+            This will permanently delete all invoices, line items, and inventory items.
+            GST settings, business config, and user accounts will be preserved.
+            It is recommended to create a backup before resetting.
+          </p>
+
+          {!showResetConfirm ? (
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-red-700 transition-all duration-200 ease-out"
+            >
+              Clear All Data
+            </button>
+          ) : (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+              <p className="text-sm font-medium text-red-800">
+                Type <span className="font-mono bg-red-100 px-1.5 py-0.5 rounded">DELETE</span> to confirm:
+              </p>
+              <input
+                type="text"
+                value={resetConfirmText}
+                onChange={(e) => setResetConfirmText(e.target.value)}
+                placeholder="Type DELETE here..."
+                className="w-full max-w-xs px-3 py-2 text-sm border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 font-mono"
+                autoFocus
+              />
+              <div className="flex gap-3">
+                <button
+                  onClick={async () => {
+                    if (resetConfirmText !== 'DELETE') {
+                      showToast('Please type DELETE to confirm', 'error', 4000);
+                      return;
+                    }
+                    setResetting(true);
+                    try {
+                      const result = await window.electronAPI.clearDatabase();
+                      if (result.success) {
+                        showToast('Database cleared successfully. Restart the app for a fresh start.', 'success', 5000);
+                        setShowResetConfirm(false);
+                        setResetConfirmText('');
+                      } else {
+                        showToast(`Error: ${result.error}`, 'error', 5000);
+                      }
+                    } catch (err) {
+                      showToast('Failed to clear database', 'error', 5000);
+                    } finally {
+                      setResetting(false);
+                    }
+                  }}
+                  disabled={resetting || resetConfirmText !== 'DELETE'}
+                  className="px-5 py-2 bg-red-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-red-700 disabled:bg-zinc-400 disabled:cursor-not-allowed transition-all duration-200 ease-out"
+                >
+                  {resetting ? 'Clearing...' : 'Confirm Reset'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowResetConfirm(false);
+                    setResetConfirmText('');
+                  }}
+                  className="px-5 py-2 bg-zinc-200 text-zinc-700 text-sm font-medium rounded-lg hover:bg-zinc-300 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

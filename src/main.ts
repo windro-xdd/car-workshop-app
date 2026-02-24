@@ -695,6 +695,25 @@ ipcMain.handle('list-amendments-for-invoice', async (_event, invoiceId: string) 
   }
 });
 
+// ===== DATABASE RESET HANDLER =====
+
+ipcMain.handle('clear-database', async () => {
+  try {
+    // Delete in correct order to respect foreign key constraints
+    await prisma.lineItem.deleteMany();
+    await prisma.invoice.deleteMany();
+    await prisma.item.deleteMany();
+
+    return { success: true, data: { message: 'All invoices, line items, and inventory items have been cleared.' } };
+  } catch (error) {
+    console.error('Error clearing database:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+});
+
 // ===== BACKUP HANDLERS =====
 
 ipcMain.handle('create-backup', async (_event, options?: { customPath?: boolean }) => {

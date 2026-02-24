@@ -102,6 +102,9 @@ const electronAPI = {
 
   openPdf: (filePath: string) =>
     ipcRenderer.invoke('open-pdf', filePath) as Promise<IpcResponse<void>>,
+
+  clearDatabase: () =>
+    ipcRenderer.invoke('clear-database') as Promise<IpcResponse<{ message: string }>>,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
