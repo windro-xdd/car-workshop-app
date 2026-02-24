@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { Item, CreateItemInput, UpdateItemInput, Invoice, GstConfig, User, LoginInput, CreateUserInput } from './types';
+import { Item, CreateItemInput, UpdateItemInput, Invoice, GstConfig, User, LoginInput, CreateUserInput, BusinessConfig } from './types';
 
 interface IpcResponse<T> {
   success: boolean;
@@ -85,6 +85,23 @@ const electronAPI = {
 
   getUsers: () =>
     ipcRenderer.invoke('get-users') as Promise<IpcResponse<User[]>>,
+
+  getBusinessConfig: () =>
+    ipcRenderer.invoke('get-business-config') as Promise<IpcResponse<BusinessConfig>>,
+
+  updateBusinessConfig: (data: Partial<BusinessConfig>) =>
+    ipcRenderer.invoke('update-business-config', data) as Promise<IpcResponse<BusinessConfig>>,
+
+  saveLogoFile: (data: { buffer: number[]; fileName: string }) =>
+    ipcRenderer.invoke('save-logo-file', data) as Promise<IpcResponse<{ logoPath: string }>>,
+
+  readLogoFile: (logoPath: string) =>
+    ipcRenderer.invoke('read-logo-file', logoPath) as Promise<
+      IpcResponse<{ buffer: number[]; mimeType: string }>
+    >,
+
+  openPdf: (filePath: string) =>
+    ipcRenderer.invoke('open-pdf', filePath) as Promise<IpcResponse<void>>,
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

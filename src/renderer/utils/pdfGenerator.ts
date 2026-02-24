@@ -7,6 +7,7 @@ export interface PDFGeneratorOptions {
   companyEmail?: string;
   companyAddress?: string;
   logoPath?: string;
+  gstin?: string;
 }
 
 const DEFAULT_OPTIONS: PDFGeneratorOptions = {
@@ -31,45 +32,83 @@ export const generateInvoicePDF = async (
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      // Header with company info
-      doc.fontSize(24).font('Helvetica-Bold').fillColor('#000080').text(config.companyName || '', 50, 50, { align: 'left' });
-      doc.fontSize(10).font('Helvetica-Oblique').fillColor('#333333').text('Premium Car Workshop Services', 50, 80, { align: 'left' });
+      // Header with company info and optional logo
+      let headerY = 50;
+
+      // If logo exists, draw it on the right
+      if (config.logoPath) {
+        try {
+          const fs = require('fs');
+          if (fs.existsSync(config.logoPath)) {
+            doc.image(config.logoPath, 480, headerY, { width: 60, height: 60, fit: [60, 60] });
+          }
+        } catch (e) {
+          // Silently skip if logo can't be loaded
+          console.error('Could not load logo for PDF:', e);
+        }
+      }
+
+      doc.fontSize(24).font('Helvetica-Bold').fillColor('#000080').text(config.companyName || '', 50, headerY, { align: 'left' });
+      doc.fontSize(10).font('Helvetica-Oblique').fillColor('#333333').text('Premium Car Workshop Services', 50, headerY + 30, { align: 'left' });
       
-      doc.moveTo(50, 100).lineTo(555, 100).strokeColor('#888888').stroke();
+      // GSTIN
+      let gstinY = headerY + 45;
+      if (config.gstin) {
+        doc.fontSize(10).font('Helvetica-Bold').fillColor('#000000').text('GSTIN: ', 50, gstinY, { continued: true }).font('Helvetica').text(config.gstin);
+        gstinY += 15;
+      }
+
+      const lineAfterHeader = gstinY + 5;
+      doc.moveTo(50, lineAfterHeader).lineTo(555, lineAfterHeader).strokeColor('#888888').stroke();
       
       doc.fontSize(10).font('Helvetica').fillColor('#000000');
-      doc.text('Address: ', 50, 115, { continued: true }).font('Helvetica').text(config.companyAddress || '');
-      doc.font('Helvetica-Bold').text('Phone: ', 50, 130, { continued: true }).font('Helvetica').text(config.companyPhone || '');
-      doc.font('Helvetica-Bold').text('Email: ', 50, 145, { continued: true }).font('Helvetica').text(config.companyEmail || '');
+      doc.font('Helvetica-Bold').text('Address: ', 50, lineAfterHeader + 10, { continued: true }).font('Helvetica').text(config.companyAddress || '');
+      doc.font('Helvetica-Bold').text('Phone: ', 50, lineAfterHeader + 25, { continued: true }).font('Helvetica').text(config.companyPhone || '');
+      doc.font('Helvetica-Bold').text('Email: ', 50, lineAfterHeader + 40, { continued: true }).font('Helvetica').text(config.companyEmail || '');
 
-      doc.moveTo(50, 170).lineTo(555, 170).strokeColor('#000000').stroke();
+      const afterContactY = lineAfterHeader + 60;
+      doc.moveTo(50, afterContactY).lineTo(555, afterContactY).strokeColor('#000000').stroke();
+
+      // TAX INVOICE header
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('TAX INVOICE', 50, afterContactY + 10, { align: 'center' });
+      doc.moveTo(50, afterContactY + 30).lineTo(555, afterContactY + 30).strokeColor('#000000').stroke();
 
       // Invoice details section
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#000000').text('INVOICE', 50, 190);
-
-      const detailsX = 50;
-      const detailsY = 220;
+      const detailsY = afterContactY + 45;
       doc.fontSize(10).font('Helvetica');
 
       // Left column: Invoice details
-      doc.text(`Invoice #: ${invoice.invoiceNumber}`, detailsX, detailsY);
-      doc.text(`Invoice Date: ${formatDate(invoice.invoiceDate)}`, detailsX, detailsY + 20);
-      doc.text(`Status: ${invoice.status}`, detailsX, detailsY + 40);
+      doc.font('Helvetica-Bold').text('INVOICE DETAILS', 50, detailsY);
+      doc.font('Helvetica');
+      doc.text(`Invoice #: ${invoice.invoiceNumber}`, 50, detailsY + 18);
+      doc.text(`Invoice Date: ${formatDate(invoice.invoiceDate)}`, 50, detailsY + 33);
+      doc.text(`Status: ${invoice.status}`, 50, detailsY + 48);
 
       // Right column: Customer details
       const rightColumnX = 320;
       doc.font('Helvetica-Bold').text('BILL TO:', rightColumnX, detailsY);
       doc.font('Helvetica');
-      doc.text(`Name: ${invoice.customerName}`, rightColumnX, detailsY + 20);
+      doc.text(`Name: ${invoice.customerName}`, rightColumnX, detailsY + 18);
+      let custY = detailsY + 33;
       if (invoice.customerPhone) {
-        doc.text(`Phone: ${invoice.customerPhone}`, rightColumnX, detailsY + 40);
+        doc.text(`Phone: ${invoice.customerPhone}`, rightColumnX, custY);
+        custY += 15;
       }
       if (invoice.customerEmail) {
-        doc.text(`Email: ${invoice.customerEmail}`, rightColumnX, detailsY + 60);
+        doc.text(`Email: ${invoice.customerEmail}`, rightColumnX, custY);
+        custY += 15;
+      }
+      if (invoice.vehicleNumber) {
+        doc.font('Helvetica-Bold').text('Vehicle No: ', rightColumnX, custY, { continued: true }).font('Helvetica').text(invoice.vehicleNumber);
+        custY += 15;
+      }
+      if (invoice.vehicleModel) {
+        doc.font('Helvetica-Bold').text('Vehicle Model: ', rightColumnX, custY, { continued: true }).font('Helvetica').text(invoice.vehicleModel);
+        custY += 15;
       }
 
       // Line items table
-      const tableTop = 280;
+      const tableTop = Math.max(detailsY + 75, custY + 15);
       const col1X = 50;
       const col2X = 280;
       const col3X = 380;

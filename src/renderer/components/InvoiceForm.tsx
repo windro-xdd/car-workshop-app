@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Item, CreateItemInput } from '../../types';
 import { useToast } from './ToastProvider';
 import { SearchableSelect } from './SearchableSelect';
@@ -12,6 +12,8 @@ interface InvoiceFormProps {
     customerName: string;
     customerPhone?: string;
     customerEmail?: string;
+    vehicleNumber?: string;
+    vehicleModel?: string;
   }) => void;
 }
 
@@ -25,17 +27,35 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [vehicleModel, setVehicleModel] = useState('');
   const [selectedItemId, setSelectedItemId] = useState('');
   const [quantity, setQuantity] = useState('1');
+  const [unitPrice, setUnitPrice] = useState('');
   const [errors, setErrors] = useState<{ customerName?: string; quantity?: string }>({});
 
-  const handleCustomerChange = () => {
+  // Propagate customer info changes to parent using useEffect to avoid stale state
+  useEffect(() => {
     onCustomerInfoChange({
       customerName,
       customerPhone,
       customerEmail,
+      vehicleNumber,
+      vehicleModel,
     });
-  };
+  }, [customerName, customerPhone, customerEmail, vehicleNumber, vehicleModel]);
+
+  // When an item is selected, populate the unit price from the item's stored rate
+  useEffect(() => {
+    if (selectedItemId) {
+      const item = items.find((i) => i.id === selectedItemId);
+      if (item) {
+        setUnitPrice(item.unitPrice.toFixed(2));
+      }
+    } else {
+      setUnitPrice('');
+    }
+  }, [selectedItemId, items]);
 
   const handleAddLineItem = () => {
     const newErrors: typeof errors = {};
@@ -50,18 +70,22 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       newErrors.quantity = 'Quantity must be greater than 0';
     }
 
+    const parsedPrice = parseFloat(unitPrice);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      showToast('Please enter a valid unit price', 'error', 4000);
+      return;
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       showToast('Please fix the errors above', 'error', 4000);
       return;
     }
 
-    const item = items.find((i) => i.id === selectedItemId);
-    if (!item) return;
-
-    onLineItemAdd(selectedItemId, parseInt(quantity), item.unitPrice);
+    onLineItemAdd(selectedItemId, parseInt(quantity), parsedPrice);
     setSelectedItemId('');
     setQuantity('1');
+    setUnitPrice('');
     showToast('Item added to invoice', 'success', 3000);
   };
 
@@ -72,7 +96,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           <svg className="w-5 h-5 mr-2 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
           </svg>
-          <h2 className="text-lg font-semibold text-zinc-900 tracking-tight">Customer Details</h2>
+          <h2 className="text-lg font-semibold text-zinc-900 tracking-tight">Customer & Vehicle Details</h2>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -88,7 +112,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               onChange={(e) => {
                 setCustomerName(e.target.value);
                 setErrors((prev) => ({ ...prev, customerName: undefined }));
-                handleCustomerChange();
               }}
               className={`w-full px-3 py-2 text-sm bg-white border rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-all duration-200 ${
                 errors.customerName ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' : 'border-zinc-200 focus:border-brand-500'
@@ -109,10 +132,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               type="tel"
               placeholder="e.g., +91 98765 43210"
               value={customerPhone}
-              onChange={(e) => {
-                setCustomerPhone(e.target.value);
-                handleCustomerChange();
-              }}
+              onChange={(e) => setCustomerPhone(e.target.value)}
               className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
             />
           </div>
@@ -125,10 +145,33 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               type="email"
               placeholder="e.g., rajesh@example.com"
               value={customerEmail}
-              onChange={(e) => {
-                setCustomerEmail(e.target.value);
-                handleCustomerChange();
-              }}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+            />
+          </div>
+          <div>
+            <label htmlFor="vehicleNumber" className="block text-sm font-medium text-zinc-700 mb-1.5">
+              Vehicle No.
+            </label>
+            <input
+              id="vehicleNumber"
+              type="text"
+              placeholder="e.g., KL-10-AB-1234"
+              value={vehicleNumber}
+              onChange={(e) => setVehicleNumber(e.target.value)}
+              className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+            />
+          </div>
+          <div>
+            <label htmlFor="vehicleModel" className="block text-sm font-medium text-zinc-700 mb-1.5">
+              Vehicle Model
+            </label>
+            <input
+              id="vehicleModel"
+              type="text"
+              placeholder="e.g., Maruti Swift"
+              value={vehicleModel}
+              onChange={(e) => setVehicleModel(e.target.value)}
               className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
             />
           </div>
@@ -184,6 +227,22 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               />
             </div>
 
+            <div className="w-full sm:w-36">
+              <label htmlFor="unitPrice" className="block text-sm font-medium text-zinc-700 mb-1.5">
+                Rate (₹)
+              </label>
+              <input
+                id="unitPrice"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={unitPrice}
+                onChange={(e) => setUnitPrice(e.target.value)}
+                className="w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all duration-200"
+              />
+            </div>
+
             <button
               onClick={handleAddLineItem}
               className="w-full sm:w-auto px-5 py-2 h-[38px] bg-zinc-900 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-zinc-800 transition-all duration-200 ease-out whitespace-nowrap"
@@ -201,6 +260,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
               <span className="text-zinc-500 mr-2">Category:</span>
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-200 text-zinc-800">
                 {items.find((i) => i.id === selectedItemId)?.category || 'N/A'}
+              </span>
+              <span className="text-zinc-400 mx-3">|</span>
+              <span className="text-zinc-500 mr-2">Stored Rate:</span>
+              <span className="text-zinc-800 font-medium">
+                ₹{items.find((i) => i.id === selectedItemId)?.unitPrice.toFixed(2) || '0.00'}
               </span>
             </div>
           )}

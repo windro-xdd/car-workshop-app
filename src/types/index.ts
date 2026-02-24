@@ -55,6 +55,8 @@ export interface Invoice {
   customerName: string;
   customerPhone?: string | null;
   customerEmail?: string | null;
+  vehicleNumber?: string | null;
+  vehicleModel?: string | null;
   grossAmount: number;
   gstAmount: number;
   netTotal: number;
@@ -82,4 +84,12 @@ export interface GstConfig {
   id: string;
   rate: number;
   isActive: boolean;
+}
+
+export interface BusinessConfig {
+  id: string;
+  gstin: string;
+  logoPath: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

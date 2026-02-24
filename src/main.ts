@@ -137,6 +137,34 @@ function migrateDatabase(): void {
       console.log('Migration complete: userId column added to invoices table');
     }
 
+    // Check if 'vehicleNumber' column exists on 'invoices' table
+    const invoiceColsForVehicle = db.pragma('table_info(invoices)') as { name: string }[];
+    const hasVehicleNumber = invoiceColsForVehicle.some((col: { name: string }) => col.name === 'vehicleNumber');
+    if (!hasVehicleNumber) {
+      console.log('Migrating database: adding vehicle columns to invoices table');
+      db.exec(`
+        ALTER TABLE "invoices" ADD COLUMN "vehicleNumber" TEXT;
+        ALTER TABLE "invoices" ADD COLUMN "vehicleModel" TEXT;
+      `);
+      console.log('Migration complete: vehicle columns added');
+    }
+
+    // Check if 'business_config' table exists
+    const bizTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='business_config'").all();
+    if (bizTables.length === 0) {
+      console.log('Migrating database: creating business_config table');
+      db.exec(`
+        CREATE TABLE "business_config" (
+            "id" TEXT NOT NULL PRIMARY KEY,
+            "gstin" TEXT NOT NULL DEFAULT '',
+            "logoPath" TEXT NOT NULL DEFAULT '',
+            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" DATETIME NOT NULL
+        );
+      `);
+      console.log('Migration complete: business_config table created');
+    }
+
     db.close();
   } catch (error) {
     console.error('Database migration error:', error);
@@ -323,7 +351,7 @@ ipcMain.handle('bulk-import-items', async (_event, data: { items: any[], filePat
 ipcMain.handle('get-invoices', async () => {
   try {
     const invoices = await prisma.invoice.findMany({
-      include: { lineItems: true },
+      include: { lineItems: true, user: true },
       orderBy: { createdAt: 'desc' },
     });
     return { success: true, data: invoices };
@@ -344,14 +372,16 @@ ipcMain.handle('create-invoice', async (_event, data) => {
          invoiceDate: new Date(data.invoiceDate),
          customerName: data.customerName,
          customerPhone: data.customerPhone,
-         customerEmail: data.customerEmail,
-         grossAmount: data.grossAmount,
-         gstAmount: data.gstAmount,
-         netTotal: data.netTotal,
-         gstPercentage: data.gstPercentage,
-         status: data.status || 'Final',
-         isAmendment: data.isAmendment || false,
-         userId: data.userId,
+          customerEmail: data.customerEmail,
+          vehicleNumber: data.vehicleNumber,
+          vehicleModel: data.vehicleModel,
+          grossAmount: data.grossAmount,
+          gstAmount: data.gstAmount,
+          netTotal: data.netTotal,
+          gstPercentage: data.gstPercentage,
+          status: data.status || 'Final',
+          isAmendment: data.isAmendment || false,
+          userId: data.userId,
          lineItems: {
            create: data.lineItems.map((line: any) => ({
              itemId: line.itemId,
@@ -444,7 +474,15 @@ ipcMain.handle('generate-invoice-pdf', async (_event, invoiceId: string) => {
 
     const items = await prisma.item.findMany();
 
-    const pdfBuffer = await generateInvoicePDF(invoice, items);
+    // Load business config for GSTIN and logo
+    const businessConfig = await prisma.businessConfig.findFirst();
+    const pdfOptions: any = {};
+    if (businessConfig) {
+      if (businessConfig.gstin) pdfOptions.gstin = businessConfig.gstin;
+      if (businessConfig.logoPath) pdfOptions.logoPath = businessConfig.logoPath;
+    }
+
+    const pdfBuffer = await generateInvoicePDF(invoice, items, pdfOptions);
 
     const fileName = `${invoice.invoiceNumber.replace('/', '-')}.pdf`;
     const filePath = path.join(app.getPath('documents'), fileName);
@@ -463,36 +501,39 @@ ipcMain.handle('generate-invoice-pdf', async (_event, invoiceId: string) => {
 
 ipcMain.handle('save-invoice-pdf', async (_event, invoiceId: string) => {
   try {
-    const result = await ipcMain.emit('generate-invoice-pdf', invoiceId);
+    const invoice = await prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { lineItems: true },
+    });
 
-    if (!result || typeof result !== 'object' || !('success' in result)) {
-      const invoice = await prisma.invoice.findUnique({
-        where: { id: invoiceId },
-        include: { lineItems: true },
-      });
-
-      if (!invoice) {
-        return { success: false, error: 'Invoice not found' };
-      }
-
-      const items = await prisma.item.findMany();
-      const pdfBuffer = await generateInvoicePDF(invoice, items);
-      const fileName = `${invoice.invoiceNumber.replace('/', '-')}.pdf`;
-
-      const { filePath } = await dialog.showSaveDialog(mainWindow!, {
-        defaultPath: path.join(app.getPath('documents'), fileName),
-        filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
-      });
-
-      if (filePath) {
-        await savePDFToFile(pdfBuffer, filePath);
-        return { success: true, data: { filePath, fileName: path.basename(filePath) } };
-      } else {
-        return { success: false, error: 'Save cancelled' };
-      }
+    if (!invoice) {
+      return { success: false, error: 'Invoice not found' };
     }
 
-    return result;
+    const items = await prisma.item.findMany();
+
+    // Load business config for GSTIN and logo
+    const businessConfig = await prisma.businessConfig.findFirst();
+    const pdfOptions: any = {};
+    if (businessConfig) {
+      if (businessConfig.gstin) pdfOptions.gstin = businessConfig.gstin;
+      if (businessConfig.logoPath) pdfOptions.logoPath = businessConfig.logoPath;
+    }
+
+    const pdfBuffer = await generateInvoicePDF(invoice, items, pdfOptions);
+    const fileName = `${invoice.invoiceNumber.replace('/', '-')}.pdf`;
+
+    const { filePath } = await dialog.showSaveDialog(mainWindow!, {
+      defaultPath: path.join(app.getPath('documents'), fileName),
+      filters: [{ name: 'PDF Files', extensions: ['pdf'] }],
+    });
+
+    if (filePath) {
+      await savePDFToFile(pdfBuffer, filePath);
+      return { success: true, data: { filePath, fileName: path.basename(filePath) } };
+    } else {
+      return { success: false, error: 'Save cancelled' };
+    }
   } catch (error) {
     console.error('Error saving PDF:', error);
     return {
@@ -514,7 +555,16 @@ ipcMain.handle('print-invoice-pdf', async (_event, invoiceId: string) => {
     }
 
     const items = await prisma.item.findMany();
-    const pdfBuffer = await generateInvoicePDF(invoice, items);
+
+    // Load business config for GSTIN and logo
+    const businessConfig = await prisma.businessConfig.findFirst();
+    const pdfOptions: any = {};
+    if (businessConfig) {
+      if (businessConfig.gstin) pdfOptions.gstin = businessConfig.gstin;
+      if (businessConfig.logoPath) pdfOptions.logoPath = businessConfig.logoPath;
+    }
+
+    const pdfBuffer = await generateInvoicePDF(invoice, items, pdfOptions);
     const fileName = `${invoice.invoiceNumber.replace('/', '-')}.pdf`;
 
     const { filePath } = await dialog.showSaveDialog(mainWindow!, {
@@ -593,8 +643,10 @@ ipcMain.handle('create-amendment', async (_event, data) => {
          invoiceDate: new Date(),
          customerName: customerName || originalInvoice.customerName,
          customerPhone: customerPhone || originalInvoice.customerPhone,
-         customerEmail: customerEmail || originalInvoice.customerEmail,
-         grossAmount,
+          customerEmail: customerEmail || originalInvoice.customerEmail,
+          vehicleNumber: data.vehicleNumber || originalInvoice.vehicleNumber,
+          vehicleModel: data.vehicleModel || originalInvoice.vehicleModel,
+          grossAmount,
          gstAmount,
          netTotal,
          gstPercentage,
@@ -755,6 +807,77 @@ ipcMain.handle('delete-backup', async (_event, backupPath: string) => {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     };
+  }
+});
+
+// ===== BUSINESS CONFIG HANDLERS =====
+
+ipcMain.handle('get-business-config', async () => {
+  try {
+    const config = await prisma.businessConfig.findFirst();
+    return { success: true, data: config || { id: 'default', gstin: '', logoPath: '' } };
+  } catch (error) {
+    console.error('Error fetching business config:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('update-business-config', async (_event, data: any) => {
+  try {
+    const config = await prisma.businessConfig.upsert({
+      where: { id: data.id || 'default' },
+      update: {
+        gstin: data.gstin,
+        logoPath: data.logoPath,
+      },
+      create: {
+        id: 'default',
+        gstin: data.gstin || '',
+        logoPath: data.logoPath || '',
+      },
+    });
+    return { success: true, data: config };
+  } catch (error) {
+    console.error('Error updating business config:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('save-logo-file', async (_event, data: { buffer: number[], fileName: string }) => {
+  try {
+    const logoDir = path.join(app.getPath('userData'), 'logos');
+    fs.mkdirSync(logoDir, { recursive: true });
+    const ext = path.extname(data.fileName) || '.png';
+    const logoPath = path.join(logoDir, `logo${ext}`);
+    fs.writeFileSync(logoPath, Buffer.from(data.buffer));
+    return { success: true, data: { logoPath } };
+  } catch (error) {
+    console.error('Error saving logo:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('read-logo-file', async (_event, logoPath: string) => {
+  try {
+    if (!logoPath || !fs.existsSync(logoPath)) {
+      return { success: false, error: 'Logo file not found' };
+    }
+    const buffer = fs.readFileSync(logoPath);
+    return { success: true, data: { buffer: Array.from(buffer), mimeType: logoPath.endsWith('.png') ? 'image/png' : 'image/jpeg' } };
+  } catch (error) {
+    console.error('Error reading logo:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+ipcMain.handle('open-pdf', async (_event, filePath: string) => {
+  try {
+    const { shell } = require('electron');
+    await shell.openPath(filePath);
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening PDF:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
 

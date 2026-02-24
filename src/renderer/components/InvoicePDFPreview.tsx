@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Invoice, Item } from '../../types';
 
 interface InvoicePDFPreviewProps {
@@ -14,6 +14,32 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [gstin, setGstin] = useState('');
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadBusinessConfig();
+  }, []);
+
+  const loadBusinessConfig = async () => {
+    try {
+      const result = await window.electronAPI.getBusinessConfig();
+      if (result.success && result.data) {
+        setGstin(result.data.gstin || '');
+        if (result.data.logoPath) {
+          const logoResult = await window.electronAPI.readLogoFile(result.data.logoPath);
+          if (logoResult.success && logoResult.data) {
+            const base64 = btoa(
+              String.fromCharCode(...new Uint8Array(logoResult.data.buffer))
+            );
+            setLogoPreview(`data:${logoResult.data.mimeType};base64,${base64}`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error loading business config:', err);
+    }
+  };
 
   const handleSave = async () => {
     setIsProcessing(true);
@@ -49,17 +75,32 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
             onClick={onClose}
             className="text-white hover:text-zinc-200 text-2xl font-bold"
           >
-            ✕
+            &#10005;
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto bg-zinc-200 flex justify-center p-6 sm:p-8">
           <div className="bg-white p-10 sm:p-14 shadow-md border border-zinc-300 w-full max-w-[794px] min-h-[1123px] flex flex-col shrink-0">
+            {/* Header */}
             <div className="text-left mb-6">
-              <h1 className="text-3xl font-bold text-[#000080] tracking-tight mb-1">KRIPA CAR CARE</h1>
-              <p className="text-sm italic text-zinc-800 mb-4">Premium Car Workshop Services</p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h1 className="text-3xl font-bold text-[#000080] tracking-tight mb-1">KRIPA CAR CARE</h1>
+                  <p className="text-sm italic text-zinc-800 mb-1">Premium Car Workshop Services</p>
+                  {gstin && (
+                    <p className="text-sm text-zinc-800">
+                      <span className="font-bold">GSTIN:</span> {gstin}
+                    </p>
+                  )}
+                </div>
+                {logoPreview && (
+                  <div className="w-20 h-20 ml-4 shrink-0">
+                    <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                  </div>
+                )}
+              </div>
               
-              <div className="border-t border-zinc-400 pt-3 space-y-1">
+              <div className="border-t border-zinc-400 pt-3 mt-3 space-y-1">
                 <p className="text-sm text-black">
                   <span className="font-bold">Address:</span> Opposite to old toll booth, Vimangalam, PO Kadaloor, Moodadi
                 </p>
@@ -72,7 +113,12 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 mb-6 mt-8">
+            {/* TAX INVOICE header */}
+            <div className="text-center my-4">
+              <h2 className="text-xl font-bold text-zinc-900 border-b-2 border-t-2 border-zinc-400 py-2">TAX INVOICE</h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 mb-6">
               <div>
                 <h3 className="font-bold text-sm mb-2">INVOICE DETAILS</h3>
                 <p className="text-sm">
@@ -94,6 +140,16 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                 </p>
                 {invoice.customerPhone && <p className="text-sm">Phone: {invoice.customerPhone}</p>}
                 {invoice.customerEmail && <p className="text-sm">Email: {invoice.customerEmail}</p>}
+                {invoice.vehicleNumber && (
+                  <p className="text-sm mt-1">
+                    <strong>Vehicle No:</strong> {invoice.vehicleNumber}
+                  </p>
+                )}
+                {invoice.vehicleModel && (
+                  <p className="text-sm">
+                    <strong>Vehicle Model:</strong> {invoice.vehicleModel}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -115,8 +171,8 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                       <tr key={lineItem.id} className="border-b border-zinc-200">
                         <td className="py-2">{itemName}</td>
                         <td className="text-center py-2">{lineItem.quantity}</td>
-                        <td className="text-right py-2">₹{lineItem.unitPrice.toFixed(2)}</td>
-                        <td className="text-right py-2">₹{lineItem.lineTotal.toFixed(2)}</td>
+                        <td className="text-right py-2">&#8377;{lineItem.unitPrice.toFixed(2)}</td>
+                        <td className="text-right py-2">&#8377;{lineItem.lineTotal.toFixed(2)}</td>
                       </tr>
                     );
                   })
@@ -136,20 +192,20 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
               <div className="w-64">
                 <div className="flex justify-between text-sm mb-2">
                   <span>Subtotal:</span>
-                  <span>₹{invoice.grossAmount.toFixed(2)}</span>
+                  <span>&#8377;{invoice.grossAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm mb-3">
                   <span>GST ({invoice.gstPercentage}%):</span>
-                  <span>₹{invoice.gstAmount.toFixed(2)}</span>
+                  <span>&#8377;{invoice.gstAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t-2 border-zinc-400 pt-2">
                   <span>TOTAL:</span>
-                  <span>₹{invoice.netTotal.toFixed(2)}</span>
+                  <span>&#8377;{invoice.netTotal.toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
-            <p className="text-center text-xs text-zinc-500">
+            <p className="text-center text-xs text-zinc-500 mt-6">
               Thank you for your business!
             </p>
           </div>

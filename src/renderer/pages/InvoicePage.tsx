@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { InvoiceForm } from '../components/InvoiceForm';
 import { InvoiceSummary } from '../components/InvoiceSummary';
-import { InvoiceTable } from '../components/InvoiceTable';
 import { InvoicePDFPreview } from '../components/InvoicePDFPreview';
-import { AmendmentForm } from '../components/AmendmentForm';
 import { useInvoiceStore } from '../store/invoiceStore';
 import { useItemStore } from '../store/itemStore';
 import { useUserStore } from '../store/userStore';
@@ -33,8 +31,9 @@ export const InvoicePage: React.FC = () => {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [vehicleModel, setVehicleModel] = useState('');
   const [selectedInvoiceForPDF, setSelectedInvoiceForPDF] = useState<Invoice | null>(null);
-  const [selectedInvoiceForAmendment, setSelectedInvoiceForAmendment] = useState<Invoice | null>(null);
 
   useEffect(() => {
     loadItems();
@@ -108,6 +107,8 @@ export const InvoicePage: React.FC = () => {
           customerName,
           customerPhone,
           customerEmail,
+          vehicleNumber: vehicleNumber || null,
+          vehicleModel: vehicleModel || null,
           grossAmount,
           gstAmount,
           netTotal,
@@ -135,8 +136,21 @@ export const InvoicePage: React.FC = () => {
          setCustomerName('');
          setCustomerPhone('');
          setCustomerEmail('');
+         setVehicleNumber('');
+         setVehicleModel('');
          setError(null);
          showToast(`Invoice created: ${invoiceNumber}`, 'success', 4000);
+
+         // Auto-generate and open PDF
+         try {
+           const pdfResult = await window.electronAPI.generateInvoicePDF(invoice.id);
+           if (pdfResult.success && pdfResult.data) {
+             await window.electronAPI.openPdf(pdfResult.data.filePath);
+           }
+         } catch (pdfErr) {
+           console.error('Error auto-generating PDF:', pdfErr);
+           // Don't block - invoice was created successfully
+         }
        } else {
          setError(result.error || 'Failed to create invoice');
          showToast(result.error || 'Failed to create invoice', 'error', 5000);
@@ -150,51 +164,11 @@ export const InvoicePage: React.FC = () => {
      }
    };
 
-   const handleDeleteInvoice = async (id: string) => {
-     setLoading(true);
-     try {
-       const result = await window.electronAPI.deleteInvoice(id);
-       if (result.success) {
-         setInvoices((invoices || []).filter((inv) => inv.id !== id));
-         setError(null);
-         showToast('Invoice deleted successfully', 'success', 4000);
-       } else {
-         setError(result.error || 'Failed to delete invoice');
-         showToast(result.error || 'Failed to delete invoice', 'error', 5000);
-       }
-     } catch (err) {
-       setError('Error deleting invoice');
-       showToast('Error deleting invoice', 'error', 5000);
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-   };
-
-   const handleCreateAmendment = async (data: any) => {
-     setLoading(true);
-     try {
-       const result = await window.electronAPI.createAmendment(data);
-       if (result.success) {
-         const amendment = result.data as Invoice;
-         setInvoices([...(invoices || []), amendment]);
-         setSelectedInvoiceForAmendment(null);
-         showToast(`Amendment created: ${amendment.invoiceNumber}`, 'success', 4000);
-       } else {
-         showToast(`Error: ${result.error}`, 'error', 5000);
-       }
-     } catch (err) {
-       showToast(`Failed to create amendment`, 'error', 5000);
-     } finally {
-       setLoading(false);
-     }
-   };
-
   return (
     <div className="p-6 md:p-8 animate-in fade-in duration-300">
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Invoice Management</h1>
-        <p className="text-sm md:text-base text-zinc-500 mt-1">Create and manage workshop invoices</p>
+        <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 tracking-tight">Create Invoice</h1>
+        <p className="text-sm md:text-base text-zinc-500 mt-1">Create workshop invoices for customers</p>
       </div>
 
       {error && (
@@ -213,6 +187,8 @@ export const InvoicePage: React.FC = () => {
                 setCustomerName(info.customerName);
                 setCustomerPhone(info.customerPhone || '');
                 setCustomerEmail(info.customerEmail || '');
+                setVehicleNumber(info.vehicleNumber || '');
+                setVehicleModel(info.vehicleModel || '');
               }}
             />
           </div>
@@ -236,53 +212,13 @@ export const InvoicePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mb-6">
-           <InvoiceTable
-           invoices={invoices || []}
-           onSelectInvoice={(invoice) => {
-             setSelectedInvoiceForPDF(invoice);
-           }}
-           onDeleteInvoice={handleDeleteInvoice}
-           onCreateAmendment={(invoiceId) => {
-             const inv = invoices?.find((i) => i.id === invoiceId);
-             if (inv) setSelectedInvoiceForAmendment(inv);
-           }}
-         />
-
-         {selectedInvoiceForPDF && (
-           <InvoicePDFPreview
-             invoice={selectedInvoiceForPDF}
-             items={items || []}
-             onClose={() => setSelectedInvoiceForPDF(null)}
-           />
-         )}
-
-        {selectedInvoiceForAmendment && (
-          <div className="fixed inset-0 bg-zinc-900/40 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
-            <div className="bg-white rounded-xl shadow-xl border border-zinc-200 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-              <div className="bg-white border-b border-zinc-100 p-5 flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-zinc-900 tracking-tight">Create Amendment: <span className="font-mono text-zinc-500 text-sm ml-1">{selectedInvoiceForAmendment.invoiceNumber}</span></h2>
-                <button
-                  onClick={() => setSelectedInvoiceForAmendment(null)}
-                  className="text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 p-1.5 rounded-lg transition-colors duration-200"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6">
-                <AmendmentForm
-                  originalInvoice={selectedInvoiceForAmendment}
-                  items={items || []}
-                  onSubmit={handleCreateAmendment}
-                  onCancel={() => setSelectedInvoiceForAmendment(null)}
-                  isLoading={loading}
-                />
-              </div>
-            </div>
-          </div>
+        {selectedInvoiceForPDF && (
+          <InvoicePDFPreview
+            invoice={selectedInvoiceForPDF}
+            items={items || []}
+            onClose={() => setSelectedInvoiceForPDF(null)}
+          />
         )}
-      </div>
     </div>
   );
 };

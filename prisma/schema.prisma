@@ -51,6 +51,8 @@ model Invoice {
   customerName      String
   customerPhone     String?
   customerEmail     String?
+  vehicleNumber     String?
+  vehicleModel      String?
   grossAmount       Float    @default(0)
   gstAmount         Float    @default(0)
   netTotal          Float    @default(0)
@@ -93,6 +95,17 @@ model GstConfig {
   isActive Boolean @default(true)
 
   @@map("gst_config")
+}
+
+// Business Configuration (GSTIN, logo, etc.)
+model BusinessConfig {
+  id        String  @id @default(cuid())
+  gstin     String  @default("")
+  logoPath  String  @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("business_config")
 }
 
 // Backup Tracking

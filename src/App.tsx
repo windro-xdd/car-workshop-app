@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { InventoryPage } from './renderer/pages/InventoryPage';
 import { InvoicePage } from './renderer/pages/InvoicePage';
+import { InvoiceHistoryPage } from './renderer/pages/InvoiceHistoryPage';
 import { SettingsPage } from './renderer/pages/SettingsPage';
 import { ReportingPage } from './renderer/pages/ReportingPage';
 import { LoginPage } from './renderer/pages/LoginPage';
@@ -10,7 +11,7 @@ import { ModalProvider } from './renderer/components/ModalProvider';
 import kripraLogo from '../public/kripa-logo.png';
 import './index.css';
 
-type Page = 'inventory' | 'invoice' | 'settings' | 'reporting';
+type Page = 'inventory' | 'invoice' | 'invoice-history' | 'settings' | 'reporting';
 
 const App: React.FC = () => {
   const { currentUser, isAuthenticated, logout } = useUserStore();
@@ -82,6 +83,22 @@ const App: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 Invoices
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentPage('invoice-history');
+                  setIsMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  currentPage === 'invoice-history'
+                    ? 'text-brand-700 bg-brand-50'
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50'
+                }`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Invoice History
               </button>
               <button
                 onClick={() => {
@@ -159,6 +176,7 @@ const App: React.FC = () => {
             <div className="flex-1 overflow-y-auto">
               {currentPage === 'inventory' && <InventoryPage />}
               {currentPage === 'invoice' && <InvoicePage />}
+              {currentPage === 'invoice-history' && <InvoiceHistoryPage />}
               {currentPage === 'settings' && <SettingsPage />}
               {currentPage === 'reporting' && <ReportingPage />}
             </div>
