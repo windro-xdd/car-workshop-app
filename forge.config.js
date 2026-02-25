@@ -39,7 +39,11 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        name: 'KripaCarCare',
+        setupIcon: './assets/kripa-logo.ico',
+        iconUrl: 'https://raw.githubusercontent.com/windro-xdd/car-workshop-app/prod/assets/kripa-logo.ico',
+      },
     },
     {
       name: '@electron-forge/maker-zip',

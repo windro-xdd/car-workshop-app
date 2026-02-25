@@ -3,6 +3,40 @@ import path from 'path';
 import fs from 'fs';
 import { PrismaClient } from '@prisma/client';
 import { generateInvoicePDF, savePDFToFile } from './renderer/utils/pdfGenerator';
+import { spawnSync } from 'child_process';
+
+// Handle Squirrel.Windows install/update/uninstall events
+// Must run BEFORE anything else - Squirrel launches the app with special args
+// during install/update/uninstall and expects it to exit quickly.
+function handleSquirrelEvent(): boolean {
+  if (process.platform !== 'win32') return false;
+
+  const squirrelEvent = process.argv[1];
+  if (!squirrelEvent || !squirrelEvent.startsWith('--squirrel-')) return false;
+
+  const appFolder = path.resolve(process.execPath, '..');
+  const rootAtomFolder = path.resolve(appFolder, '..');
+  const updateDotExe = path.resolve(path.join(rootAtomFolder, 'Update.exe'));
+  const exeName = path.basename(process.execPath);
+
+  switch (squirrelEvent) {
+    case '--squirrel-install':
+    case '--squirrel-updated':
+      spawnSync(updateDotExe, ['--createShortcut', exeName], { timeout: 10000 });
+      return true;
+    case '--squirrel-uninstall':
+      spawnSync(updateDotExe, ['--removeShortcut', exeName], { timeout: 10000 });
+      return true;
+    case '--squirrel-obsolete':
+      return true;
+    default:
+      return false;
+  }
+}
+
+if (handleSquirrelEvent()) {
+  app.quit();
+}
 
 // Declare webpack entry points injected by Electron Forge
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
@@ -189,10 +223,6 @@ const prisma = new PrismaClient({
     },
   },
 });
-
-if (require('electron-squirrel-startup')) {
-  app.quit();
-}
 
 let mainWindow: BrowserWindow | null = null;
 
