@@ -9,7 +9,11 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 
 // Dev: prisma/data/workshop.db relative to project root
-// Packaged: userData/workshop.db (copied from extraResource on first launch)
+/**
+ * Determine the absolute filesystem path to the application's SQLite database file.
+ *
+ * @returns Absolute path to `workshop.db` for the current runtime: the packaged userData location when the app is packaged, or the development `prisma/data` location otherwise.
+ */
 function getDbPath(): string {
   if (app.isPackaged) {
     return path.join(app.getPath('userData'), 'workshop.db');
@@ -17,10 +21,20 @@ function getDbPath(): string {
   return path.join(app.getAppPath(), 'prisma', 'data', 'workshop.db');
 }
 
+/**
+ * Get the absolute path to the bundled seed SQLite database inside the application's resources.
+ *
+ * @returns The absolute file path to `workshop.db` located in the application's resources directory.
+ */
 function getSeedDbPath(): string {
   return path.join(process.resourcesPath, 'workshop.db');
 }
 
+/**
+ * Ensures the application's SQLite database file and parent directory exist.
+ *
+ * If the database file is already present this function does nothing. When running from a packaged app it will create the parent directory (if missing) and copy a seed database into place if a seed file is available. When running in development it will create the parent directory if missing.
+ */
 function ensureDatabase(): void {
   const dbPath = getDbPath();
   if (!fs.existsSync(dbPath)) {
